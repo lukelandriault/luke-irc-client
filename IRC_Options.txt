@@ -1,0 +1,30 @@
+' Luke's IRC Client options file, help for all the variables here can be found in the readme.
+' REM any line with a '
+
+ScreenRes_x = 1024
+ScreenRes_y = 768
+Max BackLog = 1000
+Min Per Line = 0.5
+Auto Reconnect = 1
+Show Timestamp = 1
+Show MOTD = 1
+Show JoinLeave = 1
+Show Server Welcome = 1
+Show Server Users = 1
+
+ChatBox Font = Times New Roman
+ChatBox Font Size = 14
+User List Font = Georgia
+User List Font Size = 12
+
+Minimize To Tray = 1
+Hide Taskbar = 1
+Notify On Chat = 1
+
+[Config = 0]
+Server = irc.freenode.net
+NickName = Lic_User
+UserName = Username
+RealName = Realname
+Auto Join = #LIC
+'Auto Pass = 

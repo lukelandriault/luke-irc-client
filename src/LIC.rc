@@ -1,0 +1,8 @@
+FB_PROGRAM_ICON ICON lic_icon.ico
+1000 ICON "lic_1.ico"
+2000 ICON "lic_2.ico"
+3000 ICON "lic_3.ico"
+4000 ICON "lic_4.ico"
+5000 ICON "lic_5blue.ico"
+6000 ICON "lic_5green.ico"
+7000 ICON "lic_5red.ico"
