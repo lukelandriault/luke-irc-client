@@ -15,7 +15,7 @@
 #### Screen Shot May 19th 2010:
 ![Screenshot](http://i.imgur.com/OgTouaS.png "May 19th 2010")
 
-#### Contact
-email lukelandriault@gmail.com
-<br>irc #LIC on irc.freenode.net
+#### Contact:
+* **email** lukelandriault@gmail.com
+* **irc** #LIC on irc.freenode.net
 
