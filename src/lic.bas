@@ -33,7 +33,7 @@ Global_IRC.LastLogWrite = Timer
 Randomize( Timer, 2 ) '2 = fast algorithm, 3 = best but slower
 ChDir ExePath
 
-#Ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    If FileExists( Environ( "APPDATA" ) & "\lic\" & Options_File ) Then
       ChDir Environ( "APPDATA" ) & "\lic\"
    EndIf
@@ -345,7 +345,7 @@ For i As Integer = 0 To Global_IRC.NumServers - 1
    Global_IRC.Server[i] = 0
 Next
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    sleep( 500, 1 )
    WSACleanup( )
 #EndIf

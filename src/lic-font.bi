@@ -43,7 +43,7 @@ type font_obj
    declare Function GetWidth( byref s as string ) as integer
 
    Declare Function Load_TTFont( byref font as string, size as integer, lower as integer = 0, upper as integer = 255 ) as integer
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    Declare Function Load_W32Font( byref font as string, _size_ as integer, lower as integer = 0, upper as integer = 255 ) as integer
 #endif
 

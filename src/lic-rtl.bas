@@ -1,6 +1,6 @@
 '#define fbc -g -p chisock/lib/win32 -i chisock/ -d __LIC__=-1 -gen gcc
 ' LIC Run Time module
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    #include once "windows.bi"
    #include once "win/commdlg.bi"
 #else
@@ -374,7 +374,7 @@ Function SafeFileNameEncode( ByRef in As String ) As String
 
       Select Case In[i]
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
          Case 	1 to 31, Asc("\"), Asc("/"), Asc("|"), Asc("?"), Asc(":"), _
                Asc("*"), Asc("<"), Asc(">"), Asc(""""), Asc("^") ' ^ for fat32, rare but whatever..
 #else
@@ -396,7 +396,7 @@ Function SafeFileNameEncode( ByRef in As String ) As String
       Ret += " " + String( bad, "_" )
    EndIf
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    select case left( lcase( ret ), 3 )
       case "com", "lpt" 'com1-9 & lpt1-9 are invalid
          if len( rtrim( ret, "." ) ) = 4 then
@@ -441,7 +441,7 @@ End Function
 
 Function MkDirTree( byref folder as string ) as integer
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
 
    var d = trim( folder, any " \/""" )
    var cwd = curdir
@@ -544,7 +544,7 @@ Function MaskCompare( Byref from as String, Byref mask as String ) as Integer
 
 End Function
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
 
 function w32_GetFilename( byval title as zstring ptr = 0 ) as string
 

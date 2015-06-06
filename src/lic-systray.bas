@@ -1,12 +1,12 @@
 #define LIC_WIN_INCLUDE
 #Include Once "lic.bi"
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
    #Include Once "win\shellapi.bi"
    #Include Once "win\mmsystem.bi"
 #EndIf
 #include Once "lic-systray.bi"
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
    Dim Shared As WNDPROC OldWindowProc
    dim Shared As NOTIFYICONDATA NID
    Dim Shared As hIcon Tray_Icon(3)
@@ -29,7 +29,7 @@ Sub LIC_TrayINIT( )
    Static As Integer ran
    If ran = 1 Then Exit Sub
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
 
    /'
       1000 ICON "lic_1.ico"
@@ -83,7 +83,7 @@ Sub LIC_Screen_INIT( )
    Exit Sub
 #EndIf
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
    If ( Global_IRC.Global_Options.MinimizeToTray <> 0 ) and ( Global_IRC.HWND <> 0 ) then
       Shell_NotifyIcon( NIM_DELETE, @NID )
    EndIf
@@ -118,18 +118,18 @@ Sub LIC_Screen_INIT( )
 
    EndIf
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
    'This is a Mix of D.J Peters' and Zippy's code from the forum ( and help from Mysoft )
    'I had to take a bit of each to finally figure out a way to do what I wanted
    'It allows you to minimize to tray without having it on the taskbar when active =]
    #define _Hwnd Cast( HWND, Global_IRC.HWND )
    If ( Global_IRC.Global_Options.HideTaskbar <> 0 ) and ( Global_IRC.Global_Options.MinimizeToTray <> 0 ) then
-      SetWindowLong(_Hwnd,GWL_HWNDPARENT, Cast( Long, GetDesktopWindow( ) )) ' Mysoft Magic, this hides it from the taskbar
+      SetWindowLongPtr(_Hwnd,GWLP_HWNDPARENT, cptr( LONG_PTR, GetDesktopWindow())) ' Mysoft Magic, this hides it from the taskbar
       SetWindowPos(_Hwnd,0,0,0,0,0,SWP_NOSIZE Or SWP_NOMOVE)
    EndIf
 
    If Global_IRC.Global_Options.MinimizeToTray <> 0 Then
-      OldWindowProc = cptr(WNDPROC,SetWindowLong(_Hwnd,GWL_WNDPROC,cast(DWORD,@NewWindowProc)))
+      OldWindowProc = cptr(WNDPROC,SetWindowLongPtr(_Hwnd,GWLP_WNDPROC,cptr(LONG_PTR,@NewWindowProc)))
       LIC_TrayRegenerate( )
    EndIf
 #EndIf
@@ -151,7 +151,7 @@ Sub LIC_Screen_INIT( )
 
 End Sub
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
 
 Function NewWindowProc _
    ( _
@@ -167,7 +167,7 @@ Function NewWindowProc _
 
          if wParam = SC_MINIMIZE then
             If Global_IRC.Global_Options.HideTaskbar <> 0 Then
-               SetWindowLong( hWin,GWL_HWNDPARENT, NULL )
+               SetWindowLongPtr( hWin,GWLP_HWNDPARENT, NULL )
             endif
             ShowWindow(hWin, SW_HIDE)
             Return FALSE
@@ -179,12 +179,12 @@ Function NewWindowProc _
             If IsWindowVisible(hWin) = FALSE then
                ShowWindow (hWin, SW_SHOW)
                If Global_IRC.Global_Options.HideTaskbar <> 0 Then
-                  SetWindowLong( hWin,GWL_HWNDPARENT, Cast( Long, GetDesktopWindow( ) ))
+                  SetWindowLongPtr( hWin,GWLP_HWNDPARENT, cptr( LONG_PTR, GetDesktopWindow( ) ))
                EndIf
                SetForegroundWindow( hWin )
             Else
                If Global_IRC.Global_Options.HideTaskbar <> 0 Then
-                  SetWindowLong( hWin,GWL_HWNDPARENT, NULL )
+                  SetWindowLongPtr( hWin,GWLP_HWNDPARENT, NULL )
                EndIf
                ShowWindow(hWin, SW_HIDE)
             EndIf
@@ -222,7 +222,7 @@ End Function
 
 Sub LIC_Notify( ByRef Highlight As Integer = 0 )
 
-   #Ifdef __FB_WIN32__
+   #Ifndef __FB_LINUX__
 
    With Global_IRC.Global_Options
 
@@ -308,7 +308,7 @@ Sub LIC_Notify( ByRef Highlight As Integer = 0 )
 
 End Sub
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
 
 Sub TrayFlashThread( )
    Dim As Integer c
@@ -334,7 +334,7 @@ End Sub
 
 Sub LIC_TrayFlash_STOP( )
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
    If Global_IRC.Global_Options.MinimizeToTray <> 0 Then
       MutexLock( TrayMutex )
       If Tray_Flash_ON = 1 Then
@@ -359,7 +359,7 @@ End Sub
 
 Sub LIC_TrayShutdown( )
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
    MutexLock( TrayMutex )
    If Tray_Flash_ON = 1 Then
       Tray_Flash_STOP = 1
@@ -379,7 +379,7 @@ End Sub
 
 Sub LIC_TrayRegenerate( )
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    
    MutexLock( TrayMutex )
    NID.hWnd = Cast( HWND, Global_IRC.HWND )

@@ -1,5 +1,5 @@
 #include once "crt/stdint.bi"
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
 declare function w32_GetFilename( byval title as zstring ptr = 0 ) as string
 #else
 declare function lin_GetFilename( byref title as string = "" ) as string

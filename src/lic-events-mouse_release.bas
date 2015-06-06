@@ -109,7 +109,7 @@ elseif G->Y <= ( Global_IRC.Global_Options.ScreenRes_y - 18 ) then
 
                var link_ = HLB->HyperLink
 
-               #Ifdef __FB_WIN32__
+               #ifndef __FB_LINUX__
 
                   'The ampersand (&), pipe (|), and parentheses ( ) are special characters
                   'that must be preceded by the escape character (^)

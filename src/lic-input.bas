@@ -501,7 +501,7 @@ Sub FBGFX_CHARACTER_INPUT.Custom_ASCII( ByVal Scancode As Integer )
          SC_PAGEUP _
       }
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    Sc_array( 5 ) = 0 'fb bug with scancode
 #endif
 
@@ -604,7 +604,7 @@ End Destructor
 
 Function GetClipboardAsString( ) As String
 
-#Ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
 
    Dim As ZString ptr 	s_ptr
    Dim As HANDLE 			hglb
@@ -656,7 +656,7 @@ Function CopyToClipboard(ByRef x As String) As Integer
 
    Function = FALSE
 
-   #Ifdef __FB_WIN32__
+   #ifndef __FB_LINUX__
 
    Dim As HANDLE hText = NULL
    Dim As UByte ptr clipmem = NULL

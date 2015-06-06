@@ -1,4 +1,4 @@
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
 
    Declare Function NewWindowProc( Byval hWin As HWND, _
                                    Byval Msg As Uinteger, _

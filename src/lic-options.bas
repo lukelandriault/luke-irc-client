@@ -50,7 +50,7 @@ Function IRC_Options_Type.Set_Value( byref lhs as string, byref rhs as string ) 
          select case ucase( rhs )
          case "FREETYPE"
             FontRender = FreeType
-         #ifdef __FB_WIN32__
+         #ifndef __FB_LINUX__
          case "WINAPI"
             FontRender = WinAPI
          #endif
@@ -380,7 +380,7 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
 
             case "LOGFOLDER"
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
                .LogFolder = rtrim( rhs, any "/\ " )
                if instr( rhs, ":\" ) = 0 then
                   .LogFolder = ExePath + "/log/" + .LogFolder
@@ -489,7 +489,7 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
       FontRender = fbgfx
 #endif
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
    elseif FontRender = WinAPI then
 
       with Global_IRC.TextInfo
@@ -502,7 +502,7 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
       EndIf
 
       End With
-#endif '#ifdef __FB_WIN32__
+#endif
 
    else
 
@@ -674,7 +674,7 @@ Constructor IRC_Options_Type
       LogMaxFileSize          = 0
       LogMaxFileAction        = LogCopy
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
       FontRender            = WinAPI
 #else
       FontRender            = FreeType

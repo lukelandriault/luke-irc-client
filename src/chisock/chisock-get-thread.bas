@@ -60,7 +60,7 @@ namespace chi
 				
 			case SOCK_UDP_CONNECTIONLESS
 				
-				dim as int32_t l = len(this->p_recv_info)
+				dim as integer l = len(this->p_recv_info)
 				res = recvfrom( this->p_socket, cast(any ptr, buffer_in), size, 0, cast(sockaddr ptr, @this->p_recv_info), @l )
 				
 			end select

@@ -10,7 +10,7 @@
 #endif
 #Include Once "fbgfx.bi"
 
-#Ifdef __FB_WIN32__
+#Ifndef __FB_LINUX__
 
    '#ifdef LIC_WIN_INCLUDE
       #Include Once "windows.bi"
@@ -25,11 +25,7 @@
 
 #Else
 
-   #Ifdef __FB_LINUX__
-      #Define IRC_Build_env "Linux"
-   #Else
-      #Define IRC_Build_env "Unknown"
-   #EndIf
+   #Define IRC_Build_env "Linux"
    
    #if LIC_CHI = 0
       #include once "crt/sys/socket.bi"
@@ -59,7 +55,7 @@
       #if k = 0
          __sleep( l )
       #else
-         #ifdef __FB_WIN32__
+         #ifndef __FB_LINUX__
             SleepEx( l, k )
          #else
             _sleep( l )

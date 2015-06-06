@@ -2,7 +2,7 @@
    #define LIC_WIN_INCLUDE 1
    #include once "lic.bi"
 #else
-   #ifdef __FB_WIN32__
+   #ifndef __FB_LINUX__
       #include once "windows.bi"
    #endif
    #include once "lic-font.bi"
@@ -12,7 +12,7 @@
 
 namespace font
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
 
 function font_obj.Load_W32Font( byref font as string, _size_ as integer, lower as integer = 0, upper as integer = 255 ) as integer
 
@@ -110,7 +110,7 @@ function font_obj.Load_W32Font( byref font as string, _size_ as integer, lower a
 
 end function
 
-#endif '#ifdef __FB_WIN32__
+#endif
 
 ' ---------    Free Type   -------
 #if LIC_FREETYPE
@@ -131,7 +131,7 @@ dim shared ttf_main as __ttfont_main__ ptr
 Function getFullFontFilePath( ByRef fontname As Const String ) As String
 	If asc( fontname ) <> Asc("#") Then Return fontname
 
-#Ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
 	Function = environ("WINDIR") & "\Fonts\" & mid( fontname, 2 )
 #EndIf
 
@@ -149,7 +149,7 @@ Function ttf_init( ) as integer
 
    if ttf_main->dll = 0 then
 
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
       ttf_main->dll = DyLibLoad("freetype6.dll")
 #endif
 

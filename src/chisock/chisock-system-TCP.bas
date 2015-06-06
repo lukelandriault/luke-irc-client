@@ -68,7 +68,7 @@ namespace chi
 			byval listener as uint32_t _ 
 		) as int32_t 
 		
-		dim as int32_t size = len(sockaddr_in)
+		dim as integer size = len(sockaddr_in)
 		dim as sockaddr_in discard
 		
 		result = accept( listener, _ 

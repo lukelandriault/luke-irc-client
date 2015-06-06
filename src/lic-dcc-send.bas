@@ -236,7 +236,7 @@ Sub DCC_FILE_ACCEPT_THREAD( ByVal DT As DCC_TRACKER Ptr )
          Notice_Gui( "** To view the file in it's folder click here", Global_IRC.Global_Options.ServerMessageColour )
          with *( Global_IRC.CurrentRoom->TextArray[ Global_IRC.CurrentRoom->NumLines - 1 ] )
             .AddLink( len_hack( .Text ) - 3, len_hack( .Text ) + 1, 0, LinkShell )
-#ifdef __FB_WIN32__
+#ifndef __FB_LINUX__
             .HyperLinks->HyperLink = "explorer /e,/select," & curdir & "\downloads\" & String_Replace( "/", "\", DT->argument )
 #else
             .HyperLinks->HyperLink = curdir & "/downloads/"
