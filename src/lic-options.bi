@@ -63,9 +63,10 @@ Type Server_Options_type
       ScriptFile, _
       AutoExec
 
-   as ubyte _
+   as uinteger _
    _
-      DccAutoAccept : 2
+      DccAutoAccept : 2, _
+      TwitchHacks : LIC_BOOL_BITS
 
 
    As int16_t Port

@@ -134,6 +134,7 @@ Sub Global_IRC_Type.AddServer( byref S as Server_Options_Type )
    .LogFolder = S.LogFolder
    .DccAutoAccept = S.DccAutoAccept
    .DccAutoList = S.DccAutoList
+   .TwitchHacks = S.TwitchHacks
    .ScriptFile = S.ScriptFile
 
    if len_hack( .LogFolder ) = 0 then

@@ -129,6 +129,9 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
       
       dim as integer l, p = 1 'p[osition] l[inebreak]
       var UNT = imsg.URT->Find( imsg.From )
+      if (UNT = 0) and (ServerOptions.TwitchHacks <> 0) then
+         UNT = imsg.URT->AddUser( imsg.From )
+      EndIf
       var ColourToUse = iif( UNT, UNT->ChatColour, Global_IRC.Global_Options.WhisperColour )
       var UCaseMsg = Ucase_( imsg.msg )
       

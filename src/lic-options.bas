@@ -350,7 +350,9 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
             Case "IDSERVICE"
                .IdentifyService = rhs
             Case "IGNORELIST"
-               .IgnoreList = " " + rhs
+               .IgnoreList = " " + rhs                        
+            case "TWITCHHACKS"
+               .TwitchHacks = _BOOL( rhs )
             case "CHANNEL"
 
                rhs = ucase( rhs ) + " "
@@ -779,6 +781,7 @@ Constructor Server_Options_Type
    ScriptFile        = ""
 
    DccAutoAccept     = 0
+   TwitchHacks       = 0
 
    Port              = 6667
 
