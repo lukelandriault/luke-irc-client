@@ -16,6 +16,8 @@ Dim Global_IRC       As Global_IRC_Type
 Dim IRC_Shutdown     As Integer
 
 dim shared as double SecondUpdate, FiveSecondUpdate, MinuteUpdate
+dim shared as byte timesync
+dim shared as uint16_t Minute_Count
 
 #If __FB_DEBUG__   
    Dim UptimeStart As Double
@@ -235,6 +237,7 @@ EndIf
       
       If SecondUpdate >= MinuteUpdate Then
          
+         Minute_Count += 1         
          'LIC_DEBUG( "\\MinUpdate " & time )
          #if LIC_DCC
             Global_IRC.DCC_List.FreeZombies( )
@@ -254,7 +257,6 @@ EndIf
          dim as time_t rawtime
          dim as tm ptr timeinfo
          dim as zstring * 16 today
-         static as byte timesync
                  
          if (timesync = 0) or (SecondUpdate >= MinuteUpdate + 300) then
             time_( @rawtime )
@@ -265,7 +267,7 @@ EndIf
          else
             MinuteUpdate += 60
          endif
-
+         
          if Global_IRC.Global_Options.ShowDateChange <> 0 then
          
             'check if the day has changed
@@ -288,7 +290,36 @@ EndIf
             EndIf
             
          endif
+
+         if Minute_Count mod 30 = 0 then
          
+            var cutoff = time_ - 1800 'delete all 30 minute lurkers            
+            For i = 0 To Global_IRC.NumServers - 1
+               With *Global_IRC.Server[i]               
+               
+               if .ServerOptions.TwitchHacks <> 0 then
+                  var URT = .FirstRoom
+                  do
+                     if URT->NumUsers > 500 then
+                        var UNT = URT->FirstUser
+                        do until UNT = 0
+                           var UNTNext = UNT->NextUser
+                           if UNT->seen <= cutoff then                           
+                              URT->DelUser( UNT )
+                              UNT = UNTNext
+                           EndIf
+                           UNT = UNTNext
+                        Loop
+                     endif
+                     URT = URT->NextRoom
+                  Loop until (URT = .FirstRoom) or (URT = 0)
+               EndIf
+               
+               End With
+            next
+            
+         EndIf
+
          UpdateWindowTitle( )
          
       EndIf

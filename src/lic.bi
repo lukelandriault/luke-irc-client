@@ -1,7 +1,7 @@
 #Define IRC_Version_name "Luke's IRC Client"
 #Define IRC_Version_major "0"
 #Define IRC_Version_minor "95"
-#Define IRC_Version_build "693"
+#Define IRC_Version_build "695"
 #Define IRC_Version_http "http://code.google.com/p/luke-irc-client/"
 
 #Include Once "lic-compile-options.bi"
@@ -18,14 +18,22 @@
          #include once "win/winsock2.bi"
       #endif
    '#endif
-
-   #Define IRC_Build_env "Windows"
+   
+   #if sizeof(integer) = 4
+      #Define IRC_Build_env "Windows x86_32"
+   #else
+      #Define IRC_Build_env "Windows x86_64"
+   #endif
 
    Const NewLine = !"\r\n"
 
 #Else
-
-   #Define IRC_Build_env "Linux"
+   
+   #if sizeof(integer) = 4
+      #Define IRC_Build_env "Linux x86_32"
+   #else
+      #Define IRC_Build_env "Linux x86_64"
+   #endif
    
    #if LIC_CHI = 0
       #include once "crt/sys/socket.bi"
@@ -405,15 +413,15 @@ type server_numeric
 
    'Any descrepencies between servers on a value will be placed in the type so it is dynamic
 
-   as int16_t RPL_ISUPPORT
-   as int16_t RPL_MAP
-   as int16_t RPL_BOUNCE
+   as int16_t RPL_ISUPPORT = -1
+   as int16_t RPL_MAP = -1
+   as int16_t RPL_BOUNCE = -1
 
-   as int16_t RPL_LOGGEDIN
-   as int16_t RPL_LOGGEDOUT
-   as int16_t ERR_NICKLOCKED
+   as int16_t RPL_LOGGEDIN = -1
+   as int16_t RPL_LOGGEDOUT = -1
+   as int16_t ERR_NICKLOCKED = -1
 
-   as int16_t ERR_LAST_ERR_MSG
+   as int16_t ERR_LAST_ERR_MSG = -1
 
 End Type
 
@@ -424,6 +432,7 @@ type irc_message
    From             As string
    Parameters       As string
    Prefix           As string
+   MessageTag       As string
    Command          As zString * 8
    ParamOffset      As int32_t
    ParamCount       As int32_t

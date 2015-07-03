@@ -129,8 +129,28 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
       
       dim as integer l, p = 1 'p[osition] l[inebreak]
       var UNT = imsg.URT->Find( imsg.From )
-      if (UNT = 0) and (ServerOptions.TwitchHacks <> 0) then
-         UNT = imsg.URT->AddUser( imsg.From )
+      if ServerOptions.TwitchHacks <> 0 then
+         if UNT = 0 then UNT = imsg.URT->AddUser( imsg.From )
+         if (UNT->seen = 0) and (len_hack( imsg.MessageTag ) > 0) then
+            TempInt = instr( imsg.MessageTag, "color=#" )
+            if TempInt > 0 then
+               dim as ubyte r,g,b
+               r = valint( "&h" & mid( imsg.MessageTag, TempInt + 7, 2 ) )
+               g = valint( "&h" & mid( imsg.MessageTag, TempInt + 9, 2 ) )
+               b = valint( "&h" & mid( imsg.MessageTag, TempInt + 11, 2 ) )
+               UNT->ChatColour = Get_RGB( r & "," & g & "," & b )
+            end if            
+            TempInt = instr( imsg.MessageTag, "display-name=" )
+            if (TempInt > 0) and (imsg.MessageTag[TempInt+12] <> asc(";")) then 
+               UNT->Username = mid( imsg.MessageTag, TempInt + 13, InStrASM( TempInt+1, imsg.MessageTag, asc(";") ) - TempInt - 13 )
+            end if
+            if instr( imsg.MessageTag, "user-type=mod" ) > 0 then
+               UNT->Privs = ServerInfo.VPrefix(0)
+            elseif instr( imsg.MessageTag, "subscriber=1" ) > 0 then
+               UNT->Privs = ServerInfo.VPrefix(1)
+            EndIf
+         EndIf
+         memcpy( strptr( imsg.From ), strptr( UNT->Username ), len_hack( imsg.From ) )
       EndIf
       var ColourToUse = iif( UNT, UNT->ChatColour, Global_IRC.Global_Options.WhisperColour )
       var UCaseMsg = Ucase_( imsg.msg )

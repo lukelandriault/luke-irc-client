@@ -290,8 +290,8 @@ Function Server_type.ParseMessage( ) as integer
    Select Case *CommandPtr
 
       Case IRC_JOIN
-':LukeL!n=Luke@unaffiliated/lukel JOIN :##FreeBASIC
-
+':LukeL!n=Luke@unaffiliated/lukel JOIN :##FreeBASIC         
+         
          Var UCase_From = Ucase_( imsg.From )
          Var DisableLog = ( Global_IRC.Global_Options.LogJoinLeave = 0 )
 
@@ -311,6 +311,7 @@ Function Server_type.ParseMessage( ) as integer
             imsg.URT->pflags AND= NOT( pChanFlags.synced )
             imsg.URT->pflags OR= pChanFlags.online
          Else
+         
             If imsg.URT = 0 Then
                Assert( imsg.URT )
                Exit Function
@@ -734,6 +735,14 @@ Function Server_type.ParseMessage( ) as integer
             imsg.URT->AddLOT( "** Server responded in " & TempInt & " ms", Global_IRC.Global_Options.ServerMessageColour )
 
          end select
+      
+      case IRC_CAP
+      
+         imsg.URT->AddLOT( " ** Server enables: " & *imsg.Param( imsg.ParamCount ), Global_IRC.Global_Options.ServerMessageColour )
+      
+      case IRC_USER
+         
+         'twitch.tv USERSTATE... can be ignored
 
       Case Else
 
@@ -796,14 +805,35 @@ sub Build_IRC_Message( byref m as irc_message, byref s as string )
       memcpy( @m.raw[0], @s[0], len_hack( s ) )
       m.raw[ len_hack( S ) ] = 0
       str_len( m.raw ) = len_hack( s )
-   endif
+   endif   
+   
+   if m.raw[0] = Asc( "@" ) then
+      'The message pseudo-BNF, as defined in RFC 1459, section 2.3.1 is extended to look as follows:
+   
+      '<message>       ::= ['@' <tags> <SPACE>] [':' <prefix> <SPACE> ] <command> <params> <crlf>
+      '<tags>          ::= <tag> [';' <tag>]*
+      '<tag>           ::= <key> ['=' <escaped value>]
+      '<key>           ::= [ <vendor> '/' ] <sequence of letters, digits, hyphens (`-`)>
+      '<escaped value> ::= <sequence of any characters except NUL, CR, LF, semicolon (`;`) and SPACE>
+      '<vendor>        ::= <host>
+      
+      'Just gonna strip these and deal with them later to maintain compatibility
+      TempInt = InStrAsm( 1, m.raw, asc(" ") )
+      m.MessageTag = mid( m.raw, 2, TempInt - 2 )
+      str_len( m.raw ) -= len_hack( m.MessageTag ) + 2
+      memmove( @m.raw[0], @m.raw[TempInt], str_len( m.raw ) + 1 )
+      'LIC_DEBUG( "\\Set Message tag: [" & m.MessageTag & "]" )
+      'LIC_DEBUG( "\\Set Message raw: [" & m.raw & "]" )
+   else
+      m.MessageTag = ""
+   end if
    
    ' a ':' denotes the message begins with who it's from ( m.Prefix )
    If m.raw[0] = Asc( ":" ) Then
       m.Prefix = mid( m.raw, 2, InStrAsm( 2, m.raw, Asc(" ") ) - 2 )
       TempInt = Len_Hack( m.Prefix ) + 1
       m.Command = UCase( Mid( m.raw, TempInt + 2, InStrAsm( TempInt + 2, m.raw, Asc(" ") ) - TempInt - 2 ) )
-      m.ParamOffset = TempInt + Len( m.Command ) + 2
+      m.ParamOffset = InStrAsm( TempInt + 2, m.raw, asc(" ") )
       m.Parameters = *cptr( zstring ptr, @m.raw[ m.ParamOffset ] )
       TempInt = InStrAsm( 1, m.Prefix, Asc("!") ) - 1
       if TempInt > 0 then

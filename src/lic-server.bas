@@ -98,6 +98,7 @@ Destructor irc_message
    From        = ""
    Parameters  = ""
    Prefix      = ""
+   MessageTag  = ""
 
 End Destructor
 
@@ -1472,4 +1473,5 @@ Function Server_Type.LogToFile _
    End Select
 
 End Function
+
 

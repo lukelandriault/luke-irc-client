@@ -20,7 +20,12 @@ Select Case valInt( imsg.Command )
       UCurrentNick = Ucase_( CurrentNick )
       ReconnectTime = 0
       ExternalIP = 0
-      SendLine( "USERHOST " + CurrentNick, TRUE )
+      if ServerOptions.TwitchHacks <> 0 then
+         SendLine( "CAP REQ :twitch.tv/commands", TRUE )
+         SendLine( "CAP REQ :twitch.tv/tags", TRUE )
+      else
+         SendLine( "USERHOST " + CurrentNick, TRUE )
+      end if
       If ( Len( ServerOptions.AutoPass ) > 0 ) And ( UCase_( ServerOptions.NickName ) = UCurrentNick ) Then
          SendLine( "PRIVMSG " + ServerOptions.IdentifyService + " :IDENTIFY " + ServerOptions.AutoPass )
       EndIf
@@ -690,8 +695,8 @@ Select Case valInt( imsg.Command )
 
    case else
 ':irc.mzima.net 711 LukeL #channel :Your KNOCK has been delivered.
-
-      var msg = "** [" + imsg.Command + "] " + ServerName + " :"
+      
+      var msg = "** [" + imsg.Command + "] " + ServerName + " :" & imsg.MessageTag
       for i as integer = 0 to imsg.ParamCount
          msg += " " + *imsg.Param( i )
       Next
@@ -705,7 +710,7 @@ Select Case valInt( imsg.Command )
       #if __FB_DEBUG__
          imsg.URT->AddLOT( msg, Global_IRC.Global_Options.DebugColour )
          if valint( imsg.Command ) = 0 then
-            LIC_DEBUG( "\\ERROR:Unknown message[" & ServerNum & "]:" & imsg.raw & "\\" )
+            LIC_DEBUG( "\\ERROR:Unknown message[" & ServerNum & "]:" & imsg.MessageTag & " " & imsg.raw & "\\" )
          end if
       #else
          imsg.URT->AddLOT( msg, Global_IRC.Global_Options.ServerMessageColour )
