@@ -142,7 +142,7 @@ Function StringEqualAsm_( ByRef Str1 As String, ByRef Str2 As String ) As Intege
 end Function
 
 
-Function SortCreate( ByRef Key As String ) As uLongInt
+Function SortCreate( ByRef Key As String ) As uint64_t
    
    dim As ZString * 9 zS
    zS = Key

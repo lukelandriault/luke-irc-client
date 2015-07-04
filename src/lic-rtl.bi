@@ -21,7 +21,7 @@ Declare Function String_Replace( ByRef As String, ByRef As String, ByRef As Stri
 Declare Function CalcTime( ByVal t As Uinteger ) As String
 Declare Function CalcSize( ByRef b As uinteger ) As String
 Declare Function SafeFileNameEncode( ByRef in As String ) As String
-Declare Function SortCreate( ByRef Key As String ) As ULongInt
+Declare Function SortCreate( ByRef Key As String ) As uint64_t
 Declare function String_ExplodeZ( ByRef In_ As String, A() As ZString ptr ) as integer
 Declare Function RevLineInput( byref ff as long, byref s as string ) as integer
 Declare Function MkDirTree( byref folder as string ) as integer

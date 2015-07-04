@@ -413,7 +413,7 @@ End Function
 
 #if LIC_USE_ASM_FUNCTIONS = 0
 
-Function SortCreate( ByRef Key As String ) As uLongInt
+Function SortCreate( ByRef Key As String ) As uint64_t
 
    dim As ZString * 9 zS
    zS = Key
@@ -433,7 +433,7 @@ Function SortCreate( ByRef Key As String ) As uLongInt
    swap b[2], b[5]
    swap b[3], b[4]
 
-   Function = *cptr( uLongInt ptr, b )
+   Function = *cptr( uint64_t ptr, b )
 
 End Function
 

@@ -271,10 +271,16 @@ Function Server_type.ParseMessage( ) as integer
                imsg.URT = Lobby
             EndIf
          EndIf
+      
+      case TWITCH_USER, TWITCH_HOST, TWITCH_ROOM, TWITCH_GLOB
+         
+         'twitch.tv USERSTATE, HOSTTARGET, ROOMSTATE, GLOBALSTATE
+         'just ignore em
+         Exit Function
 
       Case Else
 
-         For i As Integer = 1 To imsg.ParamCount
+         For i As Integer = 0 To imsg.ParamCount - 1
             imsg.URT = Find( imsg.Param(i) )
             If imsg.URT Then Exit Select
          Next
@@ -738,11 +744,15 @@ Function Server_type.ParseMessage( ) as integer
       
       case IRC_CAP
       
-         imsg.URT->AddLOT( " ** Server enables: " & *imsg.Param( imsg.ParamCount ), Global_IRC.Global_Options.ServerMessageColour )
+         imsg.URT->AddLOT( " ** Server has enabled " & *imsg.Param( imsg.ParamCount ), Global_IRC.Global_Options.ServerMessageColour )
       
-      case IRC_USER
-         
-         'twitch.tv USERSTATE... can be ignored
+      case TWITCH_CLEAR
+      
+         if imsg.ParamCount > 0 then
+            imsg.URT->AddLOT( " ** " & *imsg.Param( imsg.ParamCount ) & " has been timed out", Global_IRC.Global_Options.ServerMessageColour )
+         else
+            imsg.URT->AddLOT( " ** Chat has been cleared", Global_IRC.Global_Options.ServerMessageColour )
+         end if
 
       Case Else
 

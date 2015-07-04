@@ -1246,7 +1246,7 @@ Sub Server_Type.PermitTransmission( byval flush as integer = FALSE )
             LastPingTime = SendTime
          endif
       
-      case IRC_USER
+      case TWITCH_USER 'not USERSTATE but just USER, this is ambiguous
          Lobby->AddLOT( "Sending " & SendIt, Global_IRC.Global_Options.ServerMessageColour )
       case IRC_PASS
          Lobby->AddLOT( "Sending PASS ****", Global_IRC.Global_Options.ServerMessageColour )
@@ -1362,7 +1362,7 @@ Function Server_Type.LogToFile _
       ByRef _str        As String _
    )  As Integer
 
-   dim as LongInt size
+   dim as int64_t size
 
    var sfn = lcase( SafeFileNameEncode( filename ) ) & ".log"
    var FF = FreeFile

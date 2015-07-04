@@ -2,23 +2,27 @@
 '' equal to *Cptr( int32_t Ptr, @"PRIVMSG" ) etc
 '' using this is a lot faster than a string compare
 Const As int32_t _
-   IRC_PRIVMSG = 1447645776, _
-   IRC_NOTICE  = 1230262094, _
-   IRC_JOIN    = 1313427274, _
-   IRC_PART    = 1414676816, _
-   IRC_QUIT    = 1414092113, _
-   IRC_NICK    = 1262700878, _
-   IRC_MODE    = 1162104653, _
-   IRC_KICK    = 1262700875, _
-   IRC_TOPIC   = 1229999956, _
-   IRC_INVITE  = 1230392905, _
-   IRC_PING    = 1196312912, _
-   IRC_PONG    = 1196314448, _
-   IRC_ERROR   = 1330795077, _
-   IRC_KILL    = 1280067915, _
-   IRC_PASS    = 1397965136, _
-   IRC_USER    = 1380275029, _
-   IRC_CAP     = 5259587
+   IRC_PRIVMSG    = 1447645776, _
+   IRC_NOTICE     = 1230262094, _
+   IRC_JOIN       = 1313427274, _
+   IRC_PART       = 1414676816, _
+   IRC_QUIT       = 1414092113, _
+   IRC_NICK       = 1262700878, _
+   IRC_MODE       = 1162104653, _
+   IRC_KICK       = 1262700875, _
+   IRC_TOPIC      = 1229999956, _
+   IRC_INVITE     = 1230392905, _
+   IRC_PING       = 1196312912, _
+   IRC_PONG       = 1196314448, _
+   IRC_ERROR      = 1330795077, _
+   IRC_KILL       = 1280067915, _
+   IRC_PASS       = 1397965136, _
+   IRC_CAP        = 5259587   , _ 'CAP\0
+   TWITCH_USER    = 1380275029, _ 'USERSTATE
+   TWITCH_CLEAR   = 1095060547, _ 'CLEARCHAT
+   TWITCH_HOST    = 1414745928, _ 'HOSTTARGET
+   TWITCH_ROOM    = 1297043282, _ 'ROOMSTATE
+   TWITCH_GLOB    = 1112493127    'GLOBALSTATE
 
 ' ****************************************************************************
 
