@@ -107,7 +107,7 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
          SendLine( IRC_Reply )
       EndIf
 
-      if ( action = 0 ) or ( unknown = 1 ) then
+      if ( action = 0 ) and ( unknown = 1 ) then
          Exit Sub
       EndIf
 
