@@ -36,6 +36,46 @@ sub forkexec(_command as string)
 end sub
 #endif
 
+dim shared as uint32_t colours( 0 to ... ) => { _
+	&h000000,_
+	&h0000FF,_
+	&h005FCC,_
+	&h008000,_
+	&h00FF7F,_
+	&h1D9013,_
+	&h1E90FF,_
+	&h2E8B57,_
+	&h366B96,_
+	&h4D1949,_
+	&h4E9438,_
+	&h591C92,_
+	&h5F9EA0,_
+	&h7019B3,_
+	&h796D35,_
+	&h7B00A8,_
+	&h8A2BE2,_
+	&h9ACD32,_
+	&hB100CC,_
+	&hB22222,_
+	&hBB00FF,_
+	&hCC0000,_
+	&hCC0069,_
+	&hCC0070,_
+	&hCC008F,_
+	&hD2691E,_
+	&hDAA520,_
+	&hFF0000,_
+	&hFF4500,_
+	&hFF69B4,_
+	&hFF6BB5,_
+	&hFF7F50,_
+	&hFFFF00,_
+	&hFFFF50,_
+	&hFFFFFF _
+}
+
+
+
 Constructor ParamList_Type( byref in as string, byref delimit as ubyte = asc(" ") )
 
    dim as integer temp, alloc
@@ -805,122 +845,35 @@ Sub RTrim2( Byref in as string, byref match as string = " ", byref any_ as integ
 
 End Sub
 
-function HSVtoRGB( h As Single, s As Integer, v As Integer ) as uInt32_t
-
-    dim as integer r,g,b
-    
-    If s = 0 Then
-        Return RGB( v, v, v )
-    End If
-   
-    if h > 360 then h MOD= 360
-    Dim As Single hue = h
-
-    Select Case h
-        Case 0f To 51.5f
-            hue = ((hue         ) * (30f / (51.5f          )))
-        Case 51.5f To 122f
-            hue = ((hue -  51.5f) * (30f / (122f   -  51.5f))) + 30
-        Case 122f To 142.5f
-            hue = ((hue -   122f) * (30f / (142.5f -   122f))) + 60
-        Case 142.5f To 165.5f
-            hue = ((hue - 142.5f) * (30f / (165.5f - 142.5f))) + 90
-        Case 165.5f To 192f
-            hue = ((hue - 165.5f) * (30f / (192f   - 165.5f))) + 120
-        Case 192f To 218.5f
-            hue = ((hue -   192f) * (30f / (218.5f -   192f))) + 150
-        Case 218.5f To 247f
-            hue = ((hue - 218.5f) * (30f / (247f   - 218.5f))) + 180
-        Case 247f To 275.5f
-            hue = ((hue -   247f) * (30f / (275.5f -   247f))) + 210
-        Case 275.5f To 302.5f
-            hue = ((hue - 275.5f) * (30f / (302.5f - 275.5f))) + 240
-        Case 302.5f To 330f
-            hue = ((hue - 302.5f) * (30f / (330f   - 302.5f))) + 270
-        Case 330f To 344.5f
-            hue = ((hue -   330f) * (30f / (344.5f -   330f))) + 300
-        Case 344.5f To 360f
-            hue = ((hue - 344.5f) * (30f / (360f   - 344.5f))) + 330
-    End Select
-      
-    Dim As Single h1 = hue / 60         
-    Dim As Integer i = fix(h1)
-    Dim As Single f = h1 - i
-    Dim As Integer p = v * (255 - s) shr 8
-    Dim As Integer q = v * (255 - f * s) shr 8
-    Dim As Integer t = v * (255 - (1 - f) * s) shr 8
-   
-    Select Case i
-        Case 0
-            r = v
-            g = t
-            b = p
-        Case 1
-            r = q
-            g = v
-            b = p
-        Case 2
-            r = p
-            g = v
-            b = t
-        Case 3
-            r = p
-            g = q
-            b = v
-        Case 4
-            r = t
-            g = p
-            b = v
-        Case 5
-            r = v
-            g = p
-            b = q
-    End Select
-    
-    function = RGB( r, g, b )
-    
-End Function
-
 function rndColour( byref Dark as integer = 0 ) as uInt32_t 'random colour
 
-#if 1=2 'hsv
-
-   dim as integer v, s
-   dim as single h
-   
-   h = rnd * 360
-   s = fix( rnd * 256 )
-   v = fix( rnd * 160 )
-   
-   if dark = 0 then
-      v += 96
-   EndIf
-   
-   function = HSVtoRGB( h, s, v )
-
-#else
-
-   dim as integer cmod( 2 ), cleft = 128, start = fix( rnd * 4 )
-   for i as integer = 0 to 1
-      cmod( i ) = fix( rnd * cleft )
-      cleft -= cmod( i )
-   Next
-   cmod( 2 ) = cleft
-   select case start
-      case 0: swap cmod( 0 ), cmod( 1 )
-      case 1: swap cmod( 0 ), cmod( 2 )
-      case 2: swap cmod( 1 ), cmod( 2 )
-   end select
-   for i as integer = 0 to 2
-      cmod( i ) += fix( 128 * rnd )
-   Next
-   if Dark = 0 then
-      function = rgb( cmod(0), cmod(1), cmod(2) )
+   if fix( rnd * 5 ) = 0 then
+      dim as integer cmod( 2 ), cleft = 128, start = fix( rnd * 4 )
+      for i as integer = 0 to 1
+         cmod( i ) = fix( rnd * cleft )
+         cleft -= cmod( i )
+      Next
+      cmod( 2 ) = cleft
+      select case start
+         case 0: swap cmod( 0 ), cmod( 1 )
+         case 1: swap cmod( 0 ), cmod( 2 )
+         case 2: swap cmod( 1 ), cmod( 2 )
+      end select
+      for i as integer = 0 to 2
+         cmod( i ) += fix( 128 * rnd )
+      Next
+      if Dark = 0 then
+         function = rgb( cmod(0), cmod(1), cmod(2) )
+      else
+         function = rgb( cmod(0), cmod(1), cmod(2) ) XOR RGBA( 255, 255, 255, 0 )
+      EndIf
    else
-      function = rgb( cmod(0), cmod(1), cmod(2) ) XOR RGBA( 255, 255, 255, 0 )
-   EndIf
-
-#endif
+      dim as integer i = fix( rnd * (ubound( colours ) + 1) )
+      if (Dark = 0 and colours(i) = 0) or (Dark <> 0 and colours(i) = &hFFFFFF) then
+         return rndColour( Dark )
+      EndIf
+      function = colours(i)
+   end if
 
 end function
 

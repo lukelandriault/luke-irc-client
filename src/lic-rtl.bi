@@ -27,7 +27,6 @@ Declare Function RevLineInput( byref ff as long, byref s as string ) as integer
 Declare Function MkDirTree( byref folder as string ) as integer
 Declare Function MaskCompare( Byref as String, Byref as String ) as Integer
 Declare function rndColour( byref Dark as integer = 0 ) as uInt32_t
-declare function HSVtoRGB( h As Single, s As Integer, v As Integer ) as uInt32_t
 Declare Sub String_Explode( ByRef In_ As String, A() As String )
 declare Sub UTF8toANSI( byref as string )
 declare Sub RTrim2( Byref in as string, byref match as string = " ", byref any_ as integer = 0 )

@@ -1,7 +1,7 @@
 #Define IRC_Version_name "Luke's IRC Client"
 #Define IRC_Version_major "0"
 #Define IRC_Version_minor "95"
-#Define IRC_Version_build "696"
+#Define IRC_Version_build "697"
 #Define IRC_Version_http "http://code.google.com/p/luke-irc-client/"
 
 #Include Once "lic-compile-options.bi"

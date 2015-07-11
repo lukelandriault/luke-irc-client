@@ -322,8 +322,12 @@ Function Server_type.ParseMessage( ) as integer
                Assert( imsg.URT )
                Exit Function
             EndIf
-
-            var UNT = imsg.URT->AddUser( imsg.From )
+            
+            dim as UserName_type ptr UNT            
+            if ServerOptions.TwitchHacks <> 0 then
+               UNT = imsg.URT->Find( imsg.From )
+            EndIf
+            if UNT = 0 then UNT = imsg.URT->AddUser( imsg.From )
 
             If ( (imsg.URT->pflags AND ChannelJoinLeave) <> 0 ) and ( (imsg.flags AND MF_Filter) = 0 ) Then
 
@@ -342,8 +346,8 @@ Function Server_type.ParseMessage( ) as integer
                imsg.URT->AddLOT( msg, Global_IRC.Global_Options.JoinColour, , , , @MCD, DisableLog )
 
             EndIf
-            
-            UNT->seen = time_
+
+            if ServerOptions.TwitchHacks = 0 then UNT->seen = time_
 
          EndIf
 
