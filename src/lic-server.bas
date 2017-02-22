@@ -700,7 +700,8 @@ Function Server_type.AddRoom( ByRef r As zString Ptr, byref roomtype as int16_t 
 
          case RoomTypes.Lobby
             if Global_IRC.Global_Options.LogLobby = 0 then NewRoom->pflags AND= NOT( ChannelLogging )
-            NewRoom->AddLOT( "This is a lobby channel for server messages", Global_IRC.Global_Options.ServerMessageColour, 0, Notification, , , TRUE )
+            NewRoom->AddLOT( IRC_Version_name " v" IRC_Version_major "." IRC_Version_minor "b build:" IRC_Version_build " (" IRC_Build_env ")", Global_IRC.Global_Options.ServerMessageColour, 0, , , , TRUE )
+            NewRoom->AddLOT( "This is a lobby channel for server messages", Global_IRC.Global_Options.ServerMessageColour, 0, , , , TRUE )
             NewRoom->pflags AND= NOT( FlashingTab )
             this.Lobby = NewRoom
 
@@ -1092,7 +1093,7 @@ Sub Server_Type.PermitTransmission( byval flush as integer = FALSE )
       LIC_DEBUG( "\\Empty SendIt in PermitTransmission()" )
       Exit sub
    EndIf
-
+   
 #if __FB_DEBUG__
    if Global_IRC.Global_Options.RawIRC <> 0 then
       LIC_Debug( SendIt )
@@ -1138,7 +1139,7 @@ Sub Server_Type.PermitTransmission( byval flush as integer = FALSE )
 
    Select Case *CPtr( int32_t Ptr, StrPtr( IRC_COMMAND ) )
 
-      case IRC_PRIVMSG
+      case IRC_PRIVMSG, TWITCH_WHISPER
 
          If len_hack( Param(2) ) > 2 andalso _
             ( ( Param(2)[0] = 1 ) and ( Param(2)[ len_hack( Param(2) ) - 1 ] = 1 ) ) Then
@@ -1245,8 +1246,9 @@ Sub Server_Type.PermitTransmission( byval flush as integer = FALSE )
             Global_IRC.CurrentRoom->AddLOT( "** PING -> " & ServerName, Global_IRC.Global_Options.ServerMessageColour )
             LastPingTime = SendTime
          endif
+         
       
-      case TWITCH_USER 'not USERSTATE but just USER, this is ambiguous
+      case TWITCH_USER 'not twitch's USERSTATE but just USER, this is ambiguous
          Lobby->AddLOT( "Sending " & SendIt, Global_IRC.Global_Options.ServerMessageColour )
       case IRC_PASS
          Lobby->AddLOT( "Sending PASS ****", Global_IRC.Global_Options.ServerMessageColour )
@@ -1309,30 +1311,46 @@ Function Server_Type.Ucase_( ByRef S As String ) As String
       STRICT-RFC1459 maps ascii as well as {}| to []\
       RFC1459 maps the two above and also ~ to ^
    '/
-
+   
+   const as integer lcasediff = asc("a") - asc("A")
    dim as string Ret = S
-
-   For i As Integer = 0 To ( Len_Hack( Ret ) - 1 )
-
-      Select Case Ret[i]
-
-         Case Asc("a") To Asc("z")
-            const as integer lcasediff = asc("a") - asc("A")
-            Ret[i] -= lcasediff
-         case asc("A") to asc("Z")
-            'all good
-         Case Asc("{")
-            If ServerInfo.CMap <> ASCII Then Ret[i] = asc("[")
-         Case Asc("}")
-            If ServerInfo.CMap <> ASCII Then Ret[i] = asc("]")
-         Case Asc("|")
-            If ServerInfo.CMap <> ASCII Then Ret[i] = asc("\")
-         Case Asc("~")
-            If ServerInfo.CMap = RFC1459 Then Ret[i] = asc("^")
-
-      End Select
-
-   Next
+   
+   If ServerInfo.CMap = ASCII then    
+      For i As Integer = 0 To ( Len_Hack( Ret ) - 1 )
+         Select Case Ret[i]
+            Case Asc("a") To Asc("z")            
+               Ret[i] -= lcasediff
+         end select
+      next
+   elseif ServerInfo.CMap = STRICT_RFC1459 then
+      For i As Integer = 0 To ( Len_Hack( Ret ) - 1 )
+         Select Case Ret[i]
+            Case Asc("a") To Asc("z")            
+               Ret[i] -= lcasediff
+            Case Asc("{")
+               Ret[i] = asc("[")
+            Case Asc("}")
+               Ret[i] = asc("]")
+            Case Asc("|")
+               Ret[i] = asc("\")
+         end select
+      next
+   else
+      For i As Integer = 0 To ( Len_Hack( Ret ) - 1 )
+         Select Case Ret[i]
+            Case Asc("a") To Asc("z")            
+               Ret[i] -= lcasediff
+            Case Asc("{")
+               Ret[i] = asc("[")
+            Case Asc("}")
+               Ret[i] = asc("]")
+            Case Asc("|")
+               Ret[i] = asc("\")
+            Case Asc("~")
+               Ret[i] = asc("^")
+         end select
+      next
+   end if
 
    Function = Ret
 
@@ -1474,4 +1492,30 @@ Function Server_Type.LogToFile _
 
 End Function
 
+sub IRCv3_unescape( byref m as string )
 
+#if 0
+   Character	   Sequence in <escaped value>
+   ; (semicolon)	\: (backslash and colon)
+   SPACE	         \s
+   \	            \\
+   CR	            \r
+   LF	            \n
+   all others	the character itself
+#endif
+            
+   var p = instrasm( 1, m, asc("\") )
+
+   while p > 0
+      select case m[p]
+         case asc(":")
+            m = left(m, p - 1) + ";" + mid(m, p + 2)
+         case asc("\")
+            m = left(m, p) + mid(m, p + 2)
+         case asc("s"), asc("r"), asc("n")
+            m = left(m, p - 1) + " " + mid(m, p + 2)
+      End Select
+      p = instrasm( p + 1, m, asc("\") )
+   Wend
+
+End Sub

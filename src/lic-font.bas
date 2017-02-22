@@ -195,7 +195,7 @@ Function ttf_init( ) as integer
 #endif
 
    ttf_main->internal_error = no_error
-   Function = ttf_main->internal_error
+   Function = no_error
 
 End Function
 
@@ -290,13 +290,12 @@ Function font_obj.Load_TTFont( byref font as string, size as integer, lower as i
 
    for i as integer = lower_ to upper_
 
-#define FontSmooth 1 'MONO doesn't seem to work
-
-      ret = FT_Load_Char( face, i, iif( FontSmooth, FT_LOAD_RENDER, FT_RENDER_MODE_MONO ) )
-
+      ret = FT_Load_Char( face, i, FT_LOAD_RENDER )
+      
       if ret <> 0 then
          ttf_main->external_error = ret
          ttf_main->internal_error = load_char_failed
+         LIC_DEBUG( "\\Freetype error loading char: " & i )
          return load_char_failed
       EndIf
 
@@ -316,39 +315,19 @@ Function font_obj.Load_TTFont( byref font as string, size as integer, lower as i
 
       ImageInfo( glyph( i ).greyscale, , , , pitch, pp )
 
-      if FontSmooth then
-
-         offset = pitch - face->Glyph->Bitmap.Width
-
-         for y as integer = 0 to face->Glyph->Bitmap.Rows - 1
-      		for x as integer = 0 to face->Glyph->Bitmap.Width - 1
-      			if *fp <> 0 then
-      			   *pp = *fp
-                  glyph( i ).advance_y = y + ( face->Glyph->metrics.horiAdvance shr 6 )
-               EndIf
-      			fp += 1
-      			pp += 1
-      		next x
-      		pp += offset
-      	next y
-
-      else
-
-      	offset = pitch - face->Glyph->Bitmap.Width
-
-         for y as integer = 0 to face->Glyph->Bitmap.Rows - 1
-      		for x as integer = 0 to face->Glyph->Bitmap.Width - 1
-      			if *fp = 255 then
-      			   *pp = *fp
-                  glyph( i ).advance_y = y + ( face->Glyph->metrics.horiAdvance shr 6 )
-               EndIf
-      			fp += 1
-      			pp += 1
-      		next x
-      		pp += offset
-      	next y
-
-      endif
+      offset = pitch - face->Glyph->Bitmap.Width
+   	
+      for y as integer = 0 to face->Glyph->Bitmap.Rows - 1
+   		for x as integer = 0 to face->Glyph->Bitmap.Width - 1
+   			if *fp <> 0 then
+   			   *pp = *fp
+               glyph( i ).advance_y = y + ( face->Glyph->metrics.horiAdvance shr 6 )
+            EndIf
+   			fp += 1
+   			pp += 1
+   		next x
+   		pp += offset
+   	next y
 
    Next i
 

@@ -10,7 +10,7 @@
    Extern UptimeStart As Double
    #Undef Assert
    #Macro Assert( _A )
-      If _A = 0 Then
+      If (_A) = 0 Then
          LIC_Debug( "\\Assertion Failed! " & __FILE__ & " in " & __FUNCTION__ & "(" & __LINE__ & ") :" & #_A )
          #ifdef WriteLogs
             WriteLogs( )

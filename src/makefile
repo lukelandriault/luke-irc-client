@@ -19,8 +19,8 @@ INC =	lic.bi lic-compile-options.bi lic-font.bi lic-options.bi \
 		lic-input.bi lic-dcc.bi lic-debug.bi lic-server.bi lic-rtl.bi
 
 MAINBAS = lic
-FBCVER := $(shell $(FBC) -version | grep -i 'win32')
-FBCARCH := $(shell $(FBC) -version | grep -i '32bit')
+FBCVER := $(shell $(FBC) -version | grep -i "win32")
+FBCARCH := $(shell $(FBC) -version | grep -i "32bit")
 
 ifneq (,$(FBCVER))
    ifneq (,$(FBCARCH))

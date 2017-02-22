@@ -19,7 +19,6 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
       if StringEqualASM( CTCP_CMD, "ACTION" ) then
          action = 1
       else
-      
          #if 0 'Ignore multi-target CTCP?
          If StringEqualASM( Ucase_( *imsg.Param( 0 ) ), UCurrentNick ) = 0 Then
             Exit Sub
@@ -129,22 +128,28 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
       
       var UNT = imsg.URT->Find( imsg.From )
       if ServerOptions.TwitchHacks <> 0 then
-      
-         if UNT = 0 then UNT = imsg.URT->AddUser( imsg.From )
-         if (UNT->seen = 0) and (len_hack( imsg.MessageTag ) > 0) then
+         
+         if (UNT = 0) orelse (UNT->seen = 0) then 'new subscribers will not show badges
+            dim as uint32_t twcolor
             TempInt = instr( imsg.MessageTag, "color=#" )
             if TempInt > 0 then
                dim as ubyte r,g,b
-               r = valint( "&h" & mid( imsg.MessageTag, TempInt + 7, 2 ) )
-               g = valint( "&h" & mid( imsg.MessageTag, TempInt + 9, 2 ) )
-               b = valint( "&h" & mid( imsg.MessageTag, TempInt + 11, 2 ) )
-               while (r+g+b <= 96) and (Global_IRC.DarkUsers = 0)
-                  r+=8+r : g+=8+g : b+=8+b
-               wend
-               UNT->ChatColour = Get_RGB( r & "," & g & "," & b )
-            end if            
+               dim as ubyte ptr index = cptr( ubyte ptr, @twcolor )
+               twcolor = valuint( "&h" & mid( imsg.MessageTag, TempInt + 7, 6 ) )           
+               while (Global_IRC.DarkUsers = 0) and (index[0]+index[1]+index[2] <= 96)
+                  index[0] += index[0]+8: index[1] += index[1]+8: index[2] += index[2]+8
+               Wend
+               if (index[0]=255) and (index[2]=255) then index[1] or=8 'protect the pink
+            else
+               twcolor = rndColour( Global_IRC.DarkUsers )
+            end if
+            if UNT = 0 then
+               UNT = imsg.URT->AddUser( imsg.From, twcolor )
+            else
+               UNT->ChatColour = twcolor
+            EndIf
             TempInt = instr( imsg.MessageTag, "display-name=" )
-            if (TempInt > 0) and (imsg.MessageTag[TempInt+12] <> asc(";")) then 
+            if (TempInt > 0) andalso (imsg.MessageTag[TempInt+12] <> asc(";")) then 
                UNT->Username = mid( imsg.MessageTag, TempInt + 13, InStrASM( TempInt+1, imsg.MessageTag, asc(";") ) - TempInt - 13 )
             end if
             if (instr( imsg.MessageTag, "user-type=mod" ) > 0) or (imsg.From = *( imsg.Param(0)+1 )) then
@@ -152,7 +157,7 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
             elseif instr( imsg.MessageTag, "subscriber=1" ) > 0 then
                UNT->Privs = ServerInfo.VPrefix(1)
             EndIf
-         EndIf
+         end if
          memcpy( strptr( imsg.From ), strptr( UNT->Username ), len_hack( imsg.From ) )
          
       EndIf

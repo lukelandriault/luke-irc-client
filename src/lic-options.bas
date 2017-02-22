@@ -475,16 +475,23 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
 #if LIC_FREETYPE
       with Global_IRC.TextInfo
 
-      if font.no_error <> ( font.ttf_init( ) orelse _
-         .FT_U.Load_TTFont( UserListFont, UserListFontSize, 32 ) or _
-         .FT_C.Load_TTFont( ChatBoxFont, ChatBoxFontSize, 32 ) ) then
+      dim as integer freetype_cleanup = 0
+      if font.ttf_init() <> font.no_error then
+         LIC_DEBUG( "\\FreeType error on init:" & font.geterror( ) )
+         freetype_cleanup = 1
+      elseif .FT_U.Load_TTFont( UserListFont, UserListFontSize, 32, 126 ) <> font.no_error then
+         LIC_DEBUG( "\\FreeType error on UserListFont:" & font.geterror( ) )
+         freetype_cleanup = 1         
+      elseif .FT_C.Load_TTFont( ChatBoxFont, ChatBoxFontSize, 32, 126 ) <> font.no_error then
+         LIC_DEBUG( "\\FreeType error in ChatBoxFont:" & font.geterror( ) )
+         freetype_cleanup = 1
+      end if
 
-         LIC_DEBUG( "\\FreeType error:" & font.geterror( ) )
+      if freetype_cleanup then
          .FT_C.Destructor( )
          .FT_U.Destructor( )
          FontRender = fbgfx
-
-      EndIf
+      end if
 
       end with
 #else
@@ -618,8 +625,8 @@ Sub TextInfo_type.GetSizes( )
 
       Next
 
-      ChatBoxCharSizeY = FT_C.size_ + FT_C.size_ \ 2 + 1
-      UserListCharSizeY = FT_U.size_ + FT_U.size_ \ 2 + 1
+      ChatBoxCharSizeY = FT_C.size_ + FT_C.size_ \ 2 + 4
+      UserListCharSizeY = FT_U.size_ + FT_U.size_ \ 2 + 4
 
    else 'fbgfx
 

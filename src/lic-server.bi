@@ -12,6 +12,7 @@ Enum NetworkList
    dalnet
    undernet
    gamesurge
+   twitch
 End Enum
 
 enum DaemonList

@@ -71,10 +71,13 @@ end namespace
 
 #if LIC_FREETYPE
 
-#include once "freetype2/config/ftconfig.bi"
-#include once "freetype2/fterrors.bi"
-#include once "freetype2/fttypes.bi"
+'#include once "freetype2/config/ftconfig.bi"
+'#include once "freetype2/fterrors.bi"
+'#include once "freetype2/fttypes.bi"
+#include once "freetype2/freetype.bi"
 
+
+#if 0
 #define FREETYPE_MAJOR 2
 #define FREETYPE_MINOR 1
 #define FREETYPE_PATCH 9
@@ -323,5 +326,6 @@ enum FT_Kerning_Mode_
 end enum
 
 type FT_Kerning_Mode as FT_Kerning_Mode_
+#endif
 
 #endif

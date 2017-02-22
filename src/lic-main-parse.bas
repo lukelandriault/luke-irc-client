@@ -255,9 +255,9 @@ Select Case scancode
          If count > 0 Then
             LastSearch = lcase( *cptr( zstring ptr, @TabResults[ TabCarat * MaxResultLen ] ) )
             ChatInput.Set( _
-               Left( ChatInput, SpaceInside - 1 ) & _
+               Left( cast( string, ChatInput ), SpaceInside - 1 ) & _
                *cptr( zstring ptr, @TabResults[ TabCarat * MaxResultLen ] ) & _
-               Mid( ChatInput, ChatInput.Carat + 1 ) _
+               Mid( cast( string, ChatInput ), ChatInput.Carat + 1 ) _
             )
          endif
          Function = FALSE
@@ -446,11 +446,7 @@ Select Case scancode
 
                if PL.count >= 3 then
                   for i as integer = 1 to PL.count - 2
-                     if u then
-                        ChatInput.Set( "/UNIGNORE " & PL.s[i] )
-                     else
-                        ChatInput.Set( "/IGNORE " & PL.s[i] )
-                     EndIf
+                     ChatInput.Set( "/" & LHS & " " & PL.s[i] )
                      Parse_Scancode( SC_ENTER )
                   Next
                   RHS = PL.s[PL.count - 1]
@@ -1340,7 +1336,7 @@ Select Case scancode
 
       #If __FB_DEBUG__
 
-      ElseIf ( Left( ChatInput, 1 ) = "\" ) And ( MultiKey( SC_CONTROL ) ) Then
+      ElseIf ( Left( cast( string, ChatInput ), 1 ) = "\" ) And ( MultiKey( SC_CONTROL ) ) Then
          Global_IRC.CurrentRoom->Server_Ptr->SendLine( Mid( ChatInput, 2 ) )
          Function = FALSE
 
@@ -1393,7 +1389,11 @@ Select Case scancode
             EndIf
 
             if len_hack( SendIt ) = 0 then SendIt = " "
-            Global_IRC.CurrentRoom->Server_Ptr->SendLine( "PRIVMSG " & Global_IRC.CurrentRoom->RoomName & " :" & SendIt & !"\n" )
+            if ( Global_IRC.CurrentRoom->Server_Ptr->ServerOptions.TwitchHacks <> 0 ) and ( Global_IRC.CurrentRoom->RoomType = PrivateChat ) then
+               Global_IRC.CurrentRoom->Server_Ptr->SendLine( "PRIVMSG " & Global_IRC.CurrentRoom->RoomName & " :.w " & Global_IRC.CurrentRoom->RoomName & " " & SendIt & !"\n" )
+            else
+               Global_IRC.CurrentRoom->Server_Ptr->SendLine( "PRIVMSG " & Global_IRC.CurrentRoom->RoomName & " :" & SendIt & !"\n" )
+            EndIf            
 
             ten = InStrASM( 1, Sendbuffer, 10 )
             
@@ -1401,7 +1401,11 @@ Select Case scancode
 
          RTrim2( SendBuffer, !"\r\n", TRUE )
          if len_hack( SendBuffer ) > 0 then
-            Global_IRC.CurrentRoom->Server_Ptr->SendLine( "PRIVMSG " & Global_IRC.CurrentRoom->RoomName & " :" & SendBuffer & !"\n" )
+            if ( Global_IRC.CurrentRoom->Server_Ptr->ServerOptions.TwitchHacks <> 0 ) and ( Global_IRC.CurrentRoom->RoomType = PrivateChat ) then
+               Global_IRC.CurrentRoom->Server_Ptr->SendLine( "PRIVMSG " & Global_IRC.CurrentRoom->RoomName & " :.w " & Global_IRC.CurrentRoom->RoomName & " " & SendBuffer & !"\n" )
+            else
+               Global_IRC.CurrentRoom->Server_Ptr->SendLine( "PRIVMSG " & Global_IRC.CurrentRoom->RoomName & " :" & SendBuffer & !"\n" )
+            endif
          endif
 
          Function = FALSE

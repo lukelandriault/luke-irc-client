@@ -42,12 +42,8 @@
    'link chisock? wip
    #define LIC_CHI 1
    
-   'use freetype lib? on by default for 32bit, not available (yet?) in 64
-   #if sizeof(integer) = 4
-      #define LIC_FREETYPE 1
-   #else
-      #define LIC_FREETYPE 1
-   #endif
+   'use freetype lib?
+   #define LIC_FREETYPE 1
    
    'DCC starting listen port. min 1025, max 65535, recommended 10000 to 50000
    #Define DCC_DEFAULT_LISTEN_PORT 13000
@@ -74,7 +70,7 @@
 #endif
 
 #if __LIC_GCC__ 'bitmasks not working in gcc
-   #Define LIC_BOOL_BITS 8
+   #Define LIC_BOOL_BITS 1
 #else
    #Define LIC_BOOL_BITS 1
 #endif

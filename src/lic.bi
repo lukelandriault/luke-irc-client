@@ -1,7 +1,7 @@
 #Define IRC_Version_name "Luke's IRC Client"
 #Define IRC_Version_major "0"
 #Define IRC_Version_minor "95"
-#Define IRC_Version_build "697"
+#Define IRC_Version_build "704"
 #Define IRC_Version_http "http://code.google.com/p/luke-irc-client/"
 
 #Include Once "lic-compile-options.bi"
@@ -259,12 +259,12 @@ Type Event_handler_Type
 End Type
 
 Type Username_type field = 1
-
-   As String Username
-   As uint32_t ChatColour
-   as time_t seen
-   As uint64_t Sort
+   
    As Username_type Ptr NextUser, PrevUser
+   As String Username
+   As uint64_t Sort
+   as time_t seen
+   As uint32_t ChatColour   
    As Ubyte SortHelper, Privs
 
    Declare Destructor
@@ -278,14 +278,14 @@ Type QuickColour
 end type
 
 Type LOT_MultiColour
-   As int32_t x, TextStart
-   As uint32_t Colour
-   As String Text
    As LOT_MultiColour Ptr NextMC
+   As String Text
+   As int32_t x, TextStart
+   As uint32_t Colour   
    Declare Destructor
 End Type
 
-Type LOT_MultiColour_Descriptor
+Type LOT_MultiColour_Descriptor   
    As int32_t TextStart, TextLen
    As uint32_t Colour
    As LOT_MultiColour_Descriptor Ptr NextDesc
@@ -293,26 +293,22 @@ Type LOT_MultiColour_Descriptor
 End Type
 
 Type LOT_HyperLinkBox field = 1
+   As LOT_HyperLinkBox Ptr NextLink
+   As String HyperLink, AltText
+   as int32_t TextStart
    As int16_t x1, x2
    as ubyte id
-   as int32_t TextStart
-   As String HyperLink, AltText
-   As LOT_HyperLinkBox Ptr NextLink
    Declare Destructor
 End Type
 
 Type LineOfText field = 1
+   As LOT_MultiColour Ptr MultiColour
+   As LOT_HyperLinkBox Ptr HyperLinks
+   As String Text, Timestamp
    As uInt32_t Colour
-   As String Text
-   'As Byte Ptr Descriptor
-   'As UInteger Ptr Shared
-   As String TimeStamp
-
    As uByte MesID
    as uByte Offset
 
-   As LOT_MultiColour Ptr MultiColour
-   As LOT_HyperLinkBox Ptr HyperLinks
    Declare Sub AddLink( ByRef As Integer, ByRef As Integer, ByRef As ZString Ptr, ByRef as integer )
    Declare Destructor
 End Type
@@ -603,6 +599,7 @@ Declare Sub CharKill( byref as string )
 Declare sub AddDefaultServer( )
 Declare sub RemDefaultServer( )
 declare sub Build_IRC_Message( byref as irc_message, byref as string )
+declare sub IRCv3_unescape( byref as string )
 declare sub fb_TlsFreeCtxTb alias "fb_TlsFreeCtxTb"() 'fix a crash involving threads
 Declare Function Parse_Scancode( ByRef As long ) as integer
 Declare Function ServerCheck( byref as any ptr ) as Server_Type ptr

@@ -669,7 +669,7 @@ function UserRoom_type.AddLOTEX _
    If (flags AND Backlogging) = 0 Then
       CurrentLine += 1
       If ( @this = Global_IRC.CurrentRoom ) And ( PrintNow = 1 ) and ( Spawned = 0 ) And ( ( Global_IRC.WindowActive or Global_IRC.Global_Options.ShowInactive ) <> 0 ) then
-         If ( Global_IRC.LastCL_Print + Global_IRC.Global_Options.MinPerLine ) < Timer Then
+         If ( (Global_IRC.LastCL_Print + Global_IRC.Global_Options.MinPerLine) < Timer ) or ( NewLine->MesID = LineBreak ) Then
             if Global_IRC.Global_Options.SmoothScroll = 0 then
                UpdateChatListScroll( ChatScrollBarY, 1 )
             else
@@ -1025,11 +1025,12 @@ Function UserRoom_type.AddUser _
       TopDisplayedUser = NewUser
        
    #if 1 'quick twitch fix?
-   elseif UserListWidth <= 0 then
+   elseif Server_Ptr->ServerOptions.TwitchHacks <> 0 then
       
-      LastUser->NextUser = NewUser
       NewUser->PrevUser = LastUser
+      LastUser->NextUser = NewUser
       LastUser = NewUser
+      
    #endif
       
    Else
@@ -1122,9 +1123,11 @@ Function UserRoom_type.AddUser _
 End Function
 
 Sub UserRoom_type.DelUser( ByRef UNT As UserName_type Ptr )
-   
+      
    If FirstUser = UNT Then
+      'LIC_DEBUG( "\\Deleting UNT " & UNT->Username & " 0x" & hex(UNT) )
       FirstUser = UNT->NextUser
+      Assert( FirstUser <> 0 )
       FirstUser->PrevUser = 0
       If UNT = TopDisplayedUser Then TopDisplayedUser = UNT->NextUser
    ElseIf LastUser = UNT Then

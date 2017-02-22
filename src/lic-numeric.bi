@@ -22,7 +22,9 @@ Const As int32_t _
    TWITCH_CLEAR   = 1095060547, _ 'CLEARCHAT
    TWITCH_HOST    = 1414745928, _ 'HOSTTARGET
    TWITCH_ROOM    = 1297043282, _ 'ROOMSTATE
-   TWITCH_GLOB    = 1112493127    'GLOBALSTATE
+   TWITCH_GLOB    = 1112493127, _ 'GLOBALSTATE
+   TWITCH_WHISPER = 1397311575    'WHISPER
+
 
 ' ****************************************************************************
 

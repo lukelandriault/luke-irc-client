@@ -1,8 +1,11 @@
 #define LIC_WIN_INCLUDE
 #Include Once "lic.bi"
 #Ifndef __FB_LINUX__
-   #Include Once "win\shellapi.bi"
-   #Include Once "win\mmsystem.bi"
+   #Include Once "win/shellapi.bi"
+   #Include Once "win/mmsystem.bi"
+#else
+   #undef font
+   #include Once "X11/Xutil.bi"
 #EndIf
 #include Once "lic-systray.bi"
 
@@ -18,6 +21,13 @@
    Dim Shared As Any Ptr TrayMutex
    Dim Shared As Any Ptr TrayThread
    TrayMutex = MutexCreate( )
+#else
+   type X11DRIVER 'incomplete type but just what i need to hack some gfxlib internals
+      as any ptr display, visual
+      as int32_t screen
+      as Window window_, wmwindow, fswindow    
+   End Type
+   Extern fb_x11 alias "fb_x11" as X11DRIVER 'located in fb gfxlib module
 #EndIf
 
 Extern ChatInput As FBGFX_CHARACTER_INPUT
@@ -132,6 +142,9 @@ Sub LIC_Screen_INIT( )
       OldWindowProc = cptr(WNDPROC,SetWindowLongPtr(_Hwnd,GWLP_WNDPROC,cptr(LONG_PTR,@NewWindowProc)))
       LIC_TrayRegenerate( )
    EndIf
+#else
+   dim as XClassHint xch = ( @IRC_Version_name, @"LIC" )
+   XSetClassHint( fb_x11.display, fb_x11.wmwindow, @xch )
 #EndIf
 
    dim as integer ULW = iif( Global_IRC.CurrentRoom = 0, Global_IRC.Global_Options.DefaultUserListWidth, Global_IRC.CurrentRoom->UserListWidth )

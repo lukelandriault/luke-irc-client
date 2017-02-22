@@ -24,6 +24,7 @@ dim shared as uint16_t Minute_Count
    Dim DebugLevel as integer
    UptimeStart = Timer
    Open Cons For Output As #1
+   setbuf(stdout, NULL)
 #EndIf
 
 CmdLine_Parse( )
@@ -293,7 +294,7 @@ EndIf
 
          if Minute_Count mod 30 = 0 then
          
-            var cutoff = time_ - 1800 'delete all 30 minute lurkers            
+            var cutoff = time_ - 1800 'delete all 30 minute lurkers
             For i = 0 To Global_IRC.NumServers - 1
                With *Global_IRC.Server[i]               
                
@@ -302,11 +303,11 @@ EndIf
                   do
                      if URT->NumUsers > 500 then
                         var UNT = URT->FirstUser
+                        var you = URT->Find( .UCurrentNick )
                         do until UNT = 0
                            var UNTNext = UNT->NextUser
-                           if UNT->seen <= cutoff then                           
+                           if (UNT->seen <= cutoff) and (UNT <> you) then                           
                               URT->DelUser( UNT )
-                              UNT = UNTNext
                            EndIf
                            UNT = UNTNext
                         Loop
@@ -596,7 +597,7 @@ Sub CmdLine_Parse( )
             
          Case "-v", "-version"
             Print #ff, IRC_Version_name " v" IRC_Version_major "." IRC_Version_minor "b build:" IRC_Version_build " (" IRC_Build_env ")"
-            Print #ff, "Compiled with " __FB_SIGNATURE__ " on " __DATE__ " at " __TIME__
+            Print #ff, "Compiled with " __FB_SIGNATURE__ " (" __FB_BACKEND__ ") on " __DATE__ " at " __TIME__
             Print #ff, "Compile Options: ";
             #If __FB_DEBUG__
                Print #ff, "DEBUG ";
@@ -607,6 +608,12 @@ Sub CmdLine_Parse( )
             #Ifdef LIC_NO_GFX
                Print #ff, "NO_GFX ";
             #EndIf
+            #Ifdef LIC_CHI
+               print #ff, "LIBCHISOCK ";
+            #endif
+            #ifdef LIC_FREETYPE
+               print #ff, "LIBFREETYPE ";
+            #endif
             print #ff, ""
             Terminate = 1
             

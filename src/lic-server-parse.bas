@@ -110,9 +110,9 @@ Function Server_type.ParseMessage( ) as integer
    if TempInt > 0 then
       
       if MaxMessageSize = 0 then
-         MaxMessageSize = IRC_MAX_MESSAGE_SIZE
-         imsg.raw = space( IRC_MAX_MESSAGE_SIZE )
-         imsg.msg = space( IRC_MAX_MESSAGE_SIZE )
+         MaxMessageSize = IRC_MAX_MESSAGE_SIZE * iif( ServerOptions.TwitchHacks, 2, 1 )
+         imsg.raw = space( MaxMessageSize )
+         imsg.msg = space( MaxMessageSize )
       endif
 
       if TempInt > MaxMessageSize then TempInt = MaxMessageSize
@@ -133,7 +133,7 @@ Function Server_type.ParseMessage( ) as integer
          else
             str_len( imsg.raw ) = n - 1
          EndIf
-         *cptr( ushort ptr, @imsg.raw[ n - 1 ] ) = 0
+         *cptr( int16_t ptr, @imsg.raw[ n - 1 ] ) = 0
 
          ServerSocket.dump_data( n )
 
@@ -195,7 +195,7 @@ Function Server_type.ParseMessage( ) as integer
    Select Case *CommandPtr
 
       Case IRC_PRIVMSG
-
+      
          imsg.URT = Find( imsg.Param(0) )
          If imsg.URT = 0 Then
             imsg.URT = Find( imsg.From )
@@ -271,12 +271,20 @@ Function Server_type.ParseMessage( ) as integer
                imsg.URT = Lobby
             EndIf
          EndIf
-      
-      case TWITCH_USER, TWITCH_HOST, TWITCH_ROOM, TWITCH_GLOB
+            
+      case TWITCH_USER, TWITCH_ROOM, TWITCH_GLOB
          
          'twitch.tv USERSTATE, HOSTTARGET, ROOMSTATE, GLOBALSTATE
          'just ignore em
          Exit Function
+      
+      case TWITCH_WHISPER
+      
+         imsg.URT = Find( imsg.Param(0) )
+         If imsg.URT = 0 Then
+            imsg.URT = Find( imsg.From )
+         EndIf
+         *CommandPtr = IRC_PRIVMSG 'hack to spoof as a privmsg
 
       Case Else
 
@@ -410,6 +418,7 @@ Function Server_type.ParseMessage( ) as integer
          EndIf
 
          If StringEqualAsm( UCase_From, UCurrentNick ) Then
+            Lobby->AddLOT( "** You have parted the " & imsg.URT->RoomName & " channel.", Global_IRC.Global_Options.ServerMessageColour, 0, , , , TRUE )
             DelRoom( imsg.URT )
          Else
             If ( (imsg.URT->pflags AND ChannelJoinLeave) <> 0 ) and ( (imsg.flags AND MF_Filter) = 0 ) Then
@@ -748,16 +757,45 @@ Function Server_type.ParseMessage( ) as integer
       
       case IRC_CAP
       
-         imsg.URT->AddLOT( " ** Server has enabled " & *imsg.Param( imsg.ParamCount ), Global_IRC.Global_Options.ServerMessageColour )
+         imsg.URT->AddLOT( "** Server has enabled " & *imsg.Param( imsg.ParamCount ), Global_IRC.Global_Options.ServerMessageColour )
       
       case TWITCH_CLEAR
-      
+      '@ban-duration=600;ban-reason=Automated\sby\sBoomot.;room-id=1234;target-user-id=4321 :tmi.twitch.tv CLEARCHAT #channel :<user banned>
          if imsg.ParamCount > 0 then
-            imsg.URT->AddLOT( " ** " & *imsg.Param( imsg.ParamCount ) & " has been timed out", Global_IRC.Global_Options.ServerMessageColour )
+            dim as string duration, reason
+            if len_hack( imsg.MessageTag ) > 0 then
+               var p = instr( imsg.MessageTag, "ban-duration=" )
+               if p then
+                  duration = str( valint( mid( imsg.MessageTag, p + 13, 6 ) ) )
+                  if duration = "0" then
+                     duration = "permanently"
+                  else
+                     duration = "for " & duration & " seconds"
+                  EndIf
+               EndIf
+               p = instr( imsg.MessageTag, "ban-reason=" )
+               if p then
+                  var p2 = instrasm( p + 10, imsg.MessageTag, asc(";") )
+                  if p2 > (p + 11) then
+                     reason = " (" & mid( imsg.MessageTag, p + 11, p2 - p - 11 ) & ")"
+                     IRCv3_unescape( reason )
+                  endif
+               EndIf             
+            EndIf
+            imsg.URT->AddLOT( "** " & *imsg.Param( imsg.ParamCount ) & " has been banned " & duration & reason, Global_IRC.Global_Options.ServerMessageColour )
          else
-            imsg.URT->AddLOT( " ** Chat has been cleared", Global_IRC.Global_Options.ServerMessageColour )
+            imsg.URT->AddLOT( "** Chat has been cleared", Global_IRC.Global_Options.ServerMessageColour )
          end if
-
+      
+      case TWITCH_HOST
+         ':tmi.twitch.tv HOSTTARGET #hoster :hostee 0
+         
+         var p = instrasm( 1, imsg.msg, asc(" ") )
+         dim as string hostee = iif( p > 0, left( imsg.msg, p - 1 ), imsg.msg )
+         
+         imsg.URT->AddLOT( "** Now hosting: " & hostee, Global_IRC.Global_Options.ServerMessageColour )
+         SendLine( "JOIN #" & hostee )      
+      
       Case Else
 
          Parse_RPL( imsg )

@@ -197,8 +197,8 @@ Sub AddDefaultServer( )
    .Server[0]->Lobby = .Server[0]->AddRoom( "LIC", Lobby )
    .CurrentRoom = .Server[0]->Lobby
 
-   for i as integer = 1 to .CurrentRoom->NumLines
-      delete .CurrentRoom->TextArray[i - 1]
+   for i as integer = 0 to (.CurrentRoom->NumLines - 1)
+      delete .CurrentRoom->TextArray[i]
    Next
    .CurrentRoom->NumLines = 0
    .CurrentRoom->CurrentLine = 0
@@ -398,8 +398,7 @@ Function GetPrevRoom( ByVal Room As UserRoom_Type Ptr = 0 ) As UserRoom_Type Ptr
 
    else
 
-      Dim As Integer S = any
-
+      Dim As Integer S
       For i As Integer = 0 To Global_IRC.NumServers - 1
 
          If Global_IRC.Server[i] = Room->Server_Ptr Then
