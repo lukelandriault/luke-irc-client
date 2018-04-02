@@ -151,6 +151,7 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
             TempInt = instr( imsg.MessageTag, "display-name=" )
             if (TempInt > 0) andalso (imsg.MessageTag[TempInt+12] <> asc(";")) then 
                UNT->Username = mid( imsg.MessageTag, TempInt + 13, InStrASM( TempInt+1, imsg.MessageTag, asc(";") ) - TempInt - 13 )
+               UTF8toANSI( UNT->Username )
             end if
             if (instr( imsg.MessageTag, "user-type=mod" ) > 0) or (imsg.From = *( imsg.Param(0)+1 )) then
                UNT->Privs = ServerInfo.VPrefix(0)

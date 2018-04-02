@@ -31,7 +31,7 @@ ifneq (,$(FBCVER))
 	EXEOUT = lic.exe
 else
    ifneq (,$(FBCARCH))
-	   OSSPEC = lic_icon.xpm -p chisock/lib/linux
+	   OSSPEC = lic_icon.xpm -p chisock/lib/linux32
 	else
 	   OSSPEC = lic_icon.xpm -p chisock/lib/linux64
 	endif
