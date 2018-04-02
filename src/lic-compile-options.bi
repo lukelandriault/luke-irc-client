@@ -43,7 +43,7 @@
    #define LIC_CHI 1
    
    'use freetype lib?
-   #define LIC_FREETYPE 1
+   #define LIC_FREETYPE 0
    
    'DCC starting listen port. min 1025, max 65535, recommended 10000 to 50000
    #Define DCC_DEFAULT_LISTEN_PORT 13000
