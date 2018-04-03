@@ -4,7 +4,7 @@
 default: all
 
 FBC = fbc
-CMDMOD = -mt -g -d __LIC__=-1
+CMDMOD = -mt -g -O 3 -d __LIC__=-1
 CMDEXE = -mt -g
 
 SRC = lic.bas lic-dcc.bas lic-dcc-send.bas lic-drawstring.bas lic-event_handler.bas \

@@ -43,7 +43,7 @@
    #define LIC_CHI 1
    
    'use freetype lib?
-   #define LIC_FREETYPE 0
+   #define LIC_FREETYPE 1
    
    'DCC starting listen port. min 1025, max 65535, recommended 10000 to 50000
    #Define DCC_DEFAULT_LISTEN_PORT 13000
@@ -69,8 +69,5 @@
    #Define InstrASM( _S, _T, _C ) InStr( _S, _T, Chr( _C ) )
 #endif
 
-#if __LIC_GCC__ 'bitmasks not working in gcc
-   #Define LIC_BOOL_BITS 1
-#else
-   #Define LIC_BOOL_BITS 1
-#endif
+' old gen gcc had some problems with 1 bit bools, seems ok now
+#Define LIC_BOOL_BITS 1

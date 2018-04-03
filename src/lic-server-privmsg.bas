@@ -129,6 +129,12 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
       var UNT = imsg.URT->Find( imsg.From )
       if ServerOptions.TwitchHacks <> 0 then
          
+         if ServerOptions.TwitchKillEmotes <> 0 then 'destroy any emote only messages
+            if instr( imsg.MessageTag, "emote-only=1" ) then
+               Exit Sub 'peace out
+            EndIf
+         EndIf
+         
          if (UNT = 0) orelse (UNT->seen = 0) then 'new subscribers will not show badges
             dim as uint32_t twcolor
             TempInt = instr( imsg.MessageTag, "color=#" )
@@ -150,8 +156,11 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
             EndIf
             TempInt = instr( imsg.MessageTag, "display-name=" )
             if (TempInt > 0) andalso (imsg.MessageTag[TempInt+12] <> asc(";")) then 
-               UNT->Username = mid( imsg.MessageTag, TempInt + 13, InStrASM( TempInt+1, imsg.MessageTag, asc(";") ) - TempInt - 13 )
-               UTF8toANSI( UNT->Username )
+               var dispName = mid( imsg.MessageTag, TempInt + 13, InStrASM( TempInt+1, imsg.MessageTag, asc(";") ) - TempInt - 13 )
+               UTF8toANSI( dispName )
+               if( ucase_( dispName ) = ucase_( UNT->Username ) ) then
+                  UNT->Username = dispName
+               EndIf
             end if
             if (instr( imsg.MessageTag, "user-type=mod" ) > 0) or (imsg.From = *( imsg.Param(0)+1 )) then
                UNT->Privs = ServerInfo.VPrefix(0)

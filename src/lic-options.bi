@@ -66,10 +66,11 @@ Type Server_Options_type
    as uinteger _
    _
       DccAutoAccept : 2, _
-      TwitchHacks : LIC_BOOL_BITS
+      TwitchHacks : LIC_BOOL_BITS, _
+      TwitchKillEmotes : LIC_BOOL_BITS
 
 
-   As int16_t Port
+   As uint16_t Port
 
    ChanInfo as ChanInfo_Type ptr
 

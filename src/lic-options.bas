@@ -194,6 +194,8 @@ Function IRC_Options_Type.Set_Value( byref lhs as string, byref rhs as string ) 
          AlwaysOnTop = _BOOL( rhs )
       case "TIMESTAMPUSECRT"
          TimeStampUseCRT = _BOOL( rhs )
+      case "TWITCHKILLEMOTES"
+         Global_IRC.CurrentRoom->Server_Ptr->ServerOptions.TwitchKillEmotes = _BOOL( rhs )
          
          
 ''''  COLOURS
@@ -333,9 +335,9 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
                .Port = valInt( rhs )
             Case "PASSWORD"
                .Password = rhs
-            Case "NICKNAME"
+            Case "NICKNAME", "NICK"
                .NickName = rhs
-            Case "USERNAME"
+            Case "USERNAME", "USER"
                .UserName = rhs
             Case "HOSTNAME"
                .HostName = rhs
@@ -353,6 +355,8 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
                .IgnoreList = " " + rhs                        
             case "TWITCHHACKS"
                .TwitchHacks = _BOOL( rhs )
+            case "TWITCHKILLEMOTES"
+               .TwitchKillEmotes = _BOOL( rhs )
             case "CHANNEL"
 
                rhs = ucase( rhs ) + " "
@@ -625,8 +629,8 @@ Sub TextInfo_type.GetSizes( )
 
       Next
 
-      ChatBoxCharSizeY = FT_C.size_ + FT_C.size_ \ 2 + 4
-      UserListCharSizeY = FT_U.size_ + FT_U.size_ \ 2 + 4
+      ChatBoxCharSizeY = FT_C.size_ + FT_C.size_ \ 2 + 2
+      UserListCharSizeY = FT_U.size_ + FT_U.size_ \ 2 + 2
 
    else 'fbgfx
 
@@ -789,6 +793,7 @@ Constructor Server_Options_Type
 
    DccAutoAccept     = 0
    TwitchHacks       = 0
+   TwitchKillEmotes  = 0
 
    Port              = 6667
 
