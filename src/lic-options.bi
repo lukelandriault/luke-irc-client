@@ -66,6 +66,7 @@ Type Server_Options_type
    as uinteger _
    _
       DccAutoAccept : 2, _
+      TwitchFollowHosts : LIC_BOOL_BITS, _
       TwitchHacks : LIC_BOOL_BITS, _
       TwitchKillEmotes : LIC_BOOL_BITS
 
@@ -151,7 +152,9 @@ Type IRC_Options_type
       DCC_Passive        :LIC_BOOL_BITS, _
       DisableQuickCopy   :LIC_BOOL_BITS, _
       AlwaysOnTop        :LIC_BOOL_BITS, _
-      TimeStampUseCRT    :LIC_BOOL_BITS
+      TimeStampUseCRT    :LIC_BOOL_BITS, _
+      CTCPIgnoreMulti    :LIC_BOOL_BITS, _
+      SwitchOnJoin       :LIC_BOOL_BITS
 
    As uint32_t _ 'COLOURS
    _ ' Make sure to update Convert32to8 in lic-options.bas if BackGround is not the first colour

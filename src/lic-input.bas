@@ -440,16 +440,16 @@ End Operator
 
 Sub FBGFX_CHARACTER_INPUT.Set( ByRef _RHS As String )
 
-   InputString( InputCounter ) = _Text
-
-   InputCounter += 1
+   dim as integer i = iif( InputCounter = lbound( InputString ), ubound( InputString ), InputCounter - 1 )
+   if StringEqualASM( _Text, InputString(i) ) = 0 then
+      InputString( InputCounter ) = _Text
+      InputCounter += 1
+   end if
 
    InputString( InputCounter ) = _RHS
-
    InputBrowser = InputCounter
 
    _Text = _RHS
-
    Carat = Len_hack( _Text )
 
    SelectionStart = 0
@@ -501,7 +501,7 @@ Sub FBGFX_CHARACTER_INPUT.Custom_ASCII( ByVal Scancode As Integer )
          SC_PAGEUP _
       }
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    Sc_array( 5 ) = 0 'fb bug with scancode
 #endif
 
@@ -604,7 +604,7 @@ End Destructor
 
 Function GetClipboardAsString( ) As String
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
    Dim As ZString ptr 	s_ptr
    Dim As HANDLE 			hglb
@@ -656,7 +656,7 @@ Function CopyToClipboard(ByRef x As String) As Integer
 
    Function = FALSE
 
-   #ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
    Dim As HANDLE hText = NULL
    Dim As UByte ptr clipmem = NULL

@@ -2,7 +2,7 @@
    #define LIC_WIN_INCLUDE 1
    #include once "lic.bi"
 #else
-   #ifndef __FB_LINUX__
+   #ifdef __FB_WIN32__
       #include once "windows.bi"
    #endif
    #include once "lic-font.bi"
@@ -12,7 +12,7 @@
 
 namespace font
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
 function font_obj.Load_W32Font( byref font as string, _size_ as integer, lower as integer = 0, upper as integer = 255 ) as integer
 
@@ -123,6 +123,7 @@ dim shared FT_MulFix           as Function (byval as FT_Long, byval as FT_Long) 
 dim shared FT_New_Face         as Function (byval as FT_Library, byval as zstring ptr, byval as FT_Long, byval as FT_Face ptr) as FT_Error
 dim shared FT_Done_Face        as Function (byval as FT_Face) as FT_Error
 dim shared FT_Load_Char        as Function (byval as FT_Face, byval as FT_ULong, byval as FT_Int32) as FT_Error
+dim shared FT_Bitmap_Convert   as Function (byval as FT_Library, byval as FT_Bitmap ptr, byval as FT_Bitmap ptr, byval as FT_Int) as FT_Error
 end extern
 
 #endif
@@ -131,7 +132,7 @@ dim shared ttf_main as __ttfont_main__ ptr
 Function getFullFontFilePath( ByRef fontname As Const String ) As String
 	If asc( fontname ) <> Asc("#") Then Return fontname
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 	Function = environ("WINDIR") & "\Fonts\" & mid( fontname, 2 )
 #EndIf
 
@@ -149,11 +150,9 @@ Function ttf_init( ) as integer
 
    if ttf_main->dll = 0 then
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
       ttf_main->dll = DyLibLoad("freetype6.dll")
-#endif
-
-#ifdef __FB_LINUX__
+#else
    #if LIC_FREETYPE
       ttf_main->dll = DyLibLoad("freetype.so.6")
       if ttf_main->dll = 0 then ttf_main->dll = DyLibLoad("freetype.so")
@@ -178,6 +177,7 @@ Function ttf_init( ) as integer
       FT_MulFix            = DyLibSymbol( ttf_main->dll, "FT_MulFix" )
       FT_Done_FreeType     = DyLibSymbol( ttf_main->dll, "FT_Done_FreeType" )
       FT_Init_FreeType     = DyLibSymbol( ttf_main->dll, "FT_Init_FreeType" )
+      FT_Bitmap_Convert    = DyLibSymbol( ttf_main->dll, "FT_Bitmap_Convert" )
 
    endif
 
@@ -278,15 +278,24 @@ Function font_obj.Load_TTFont( byref font as string, size as integer, lower as i
       ttf_main->internal_error = load_face_failed
       return load_face_failed
    EndIf
+   
+#ifdef LIC_UNICODE 'WIP
+   ret = FT_Select_Charmap( face, ft_encoding_unicode )
+   if ret <> 0 then
+      LIC_DEBUG( "\\Unicode font loading failed" )
+   EndIf
+#endif
 
-   size = DeriveDesignHeightFromMaxHeight( face, int( size * 1.8 ) )
-   ret = FT_Set_Pixel_Sizes( face, size, size )
+   size = DeriveDesignHeightFromMaxHeight( face, int( size * 2 ) )
+   ret = FT_Set_Pixel_Sizes( face, size, 0 )
 
    if ret <> 0 then
       ttf_main->external_error = ret
       ttf_main->internal_error = set_size_failed
       return set_size_failed
    EndIf
+
+   size_ = face->size->metrics.height shr 6
 
    for i as integer = lower_ to upper_
 
@@ -301,33 +310,36 @@ Function font_obj.Load_TTFont( byref font as string, size as integer, lower as i
 
       glyph( i ).bLeft = face->Glyph->Bitmap_Left
       glyph( i ).bTop = face->Glyph->Bitmap_Top
-      glyph( i ).advance_x = ( face->Glyph->Advance.x shr 6 )
-
-      if ( face->Glyph->metrics.horiBearingY shr 6 ) - size \ 5 > size_ then
-         size_ = ( face->Glyph->metrics.horiBearingY shr 6 ) - size \ 5
+      glyph( i ).advance_x = face->Glyph->Advance.x shr 6
+      glyph( i ).advance_y = face->Glyph->Advance.y shr 6
+      
+      if ( face->Glyph->Bitmap.Width = 0 ) or ( face->Glyph->bitmap.pixel_mode <> FT_PIXEL_MODE_GRAY ) then 'space etc
+         continue for
       EndIf
-
+      
       glyph( i ).greyscale = ImageCreate( face->Glyph->Bitmap.Width, face->Glyph->Bitmap.Rows, , 8 )
 
       dim as ubyte ptr fp = face->Glyph->Bitmap.Buffer
       dim as ubyte ptr pp
-      dim as integer pitch, offset
+      dim as int32_t pitch, offset
 
-      ImageInfo( glyph( i ).greyscale, , , , pitch, pp )
-
-      offset = pitch - face->Glyph->Bitmap.Width
+      ImageInfo( glyph( i ).greyscale, , , , pitch, pp )      
+      
+      if face->Glyph->Bitmap.pitch = pitch then 'pitch perfect
+         memcpy( pp, fp, face->Glyph->Bitmap.pitch * face->Glyph->Bitmap.Rows )
+      else
+         offset = pitch - face->Glyph->Bitmap.pitch
+         for y as integer = 0 to face->Glyph->Bitmap.Rows - 1
+      		for x as integer = 0 to face->Glyph->Bitmap.Width - 1
+    			   *pp = *fp
+       			fp += 1
+      			pp += 1
+      		next x
+      		pp += offset
+      	next y
+      EndIf
+      
    	
-      for y as integer = 0 to face->Glyph->Bitmap.Rows - 1
-   		for x as integer = 0 to face->Glyph->Bitmap.Width - 1
-   			if *fp <> 0 then
-   			   *pp = *fp
-               glyph( i ).advance_y = y + ( face->Glyph->metrics.horiAdvance shr 6 )
-            EndIf
-   			fp += 1
-   			pp += 1
-   		next x
-   		pp += offset
-   	next y
 
    Next i
 
@@ -342,8 +354,8 @@ Function font_obj.DrawString( byval pos_x as integer, byval pos_y as integer, by
 
    static as ubyte ptr fp
    static as any ptr imgp
-   static as uInt32_t rb, g, c2
-   static as integer a, h, p, char, draw_x, draw_y, pitch, pitchdiff, imgw
+   static as uInt32_t rb, g
+   static as int32_t a, h, p, char, draw_x, draw_y, pitch, pitchdiff, imgw
    static as integer BPP
 
    'NULL is at 4 BPP (do not render)
@@ -372,10 +384,6 @@ Function font_obj.DrawString( byval pos_x as integer, byval pos_y as integer, by
       psize = size_
       pbpp = BPP
 
-#if __LIC__
-      c2 = Global_IRC.Global_Options.BackGroundColour
-#endif
-
    else
       
       line img, ( 0, 0 )-( pimgw - 1, psize * 2 - 1 ), iif( pbpp <> 8, rgb(255, 0, 255), 0 ), bf
@@ -384,12 +392,14 @@ Function font_obj.DrawString( byval pos_x as integer, byval pos_y as integer, by
    
    ImageInfo( img, , , , pitch, origimgp )
    
-   draw_y = size_ \ 2
+   draw_y = iif( hint = font_TTF, size_, size_ / 2 )
    draw_x = 8
 
-   if hint = font_TTF then
-      draw_y += size_
-   EndIf
+#if __LIC__
+      #define bg Global_IRC.Global_Options.BackGroundColour
+#else
+      dim as uint32_t bg = 0 
+#endif
 
    for i as integer = 0 to len_hack(s) - 1
 
@@ -437,9 +447,9 @@ Function font_obj.DrawString( byval pos_x as integer, byval pos_y as integer, by
 
       				   ' http://www.daniweb.com/code/snippet216791.html
       				   #if 1 'blend background pixel?
-      				   'c2 = point( draw_x + x, draw_y + y )
-         				rb = (((colour and &H00ff00ff) * a) + ((c2 and &H00ff00ff) * (&Hff - a))) and &Hff00ff00
-         				g =  (((colour and &H0000ff00) * a) + ((c2 and &H0000ff00) * (&Hff - a))) and &H00ff0000
+      				   'bg = point( draw_x + x, draw_y + y )
+         				rb = (((colour and &H00ff00ff) * a) + ((bg and &H00ff00ff) * (&Hff - a))) and &Hff00ff00
+         				g =  (((colour and &H0000ff00) * a) + ((bg and &H0000ff00) * (&Hff - a))) and &H00ff0000
          				#else
          				rb = ((colour and &H00ff00ff) * a) and &Hff00ff00
          				g =  ((colour and &H0000ff00) * a) and &H00ff0000
@@ -671,7 +681,7 @@ Function font_obj.DrawString( byval pos_x as integer, byval pos_y as integer, by
 
    next i
 
-   put ( pos_x - 8, pos_y - ( size_ \ 2 ) ), img, trans
+   put ( pos_x - 8, pos_y - draw_y \ 2 ), img, trans
 
    'imagedestroy( img )
 

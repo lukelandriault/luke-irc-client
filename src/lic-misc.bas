@@ -109,6 +109,8 @@ Destructor LineOfText
    LIC_DESTRUCTOR1
 
    Text = ""
+   Timestamp = ""
+   
    If HyperLinks <> 0 Then Delete Hyperlinks
    If MultiColour <> 0 Then Delete MultiColour
 

@@ -2,6 +2,12 @@
 #Include once "file.bi"
 #include once "vbcompat.bi"
 
+Extern ChatInput     As FBGFX_CHARACTER_INPUT
+
+'SmoothScroll buffers/vectors shared between rooms
+static shared as any ptr ss_img, ss_nimg
+static shared as integer ss_x, ss_y, ss_nx, ss_ny
+
 Sub UserRoom_Type.SmoothScroll( byref LinesAdded as integer )
 
    #define SR_X Global_IRC.Global_Options.ScreenRes_X
@@ -11,74 +17,110 @@ Sub UserRoom_Type.SmoothScroll( byref LinesAdded as integer )
    dim as integer pixels = LinesAdded * Global_IRC.TextInfo.ChatBoxCharSizeY + 4
    dim as integer X = SR_X - ULW - 13
    dim as integer Y = SR_Y - 20 - 16
-   dim as integer VPX1 = ULW, VPX2 = SR_x - 13
-   dim as integer VPY1 = 21,  VPY2 = SR_y - 17
+   dim as integer VPX1 = ULW + 1, VPX2 = SR_x - 13
+   dim as integer VPY1 = 21,  VPY2 = SR_y - 16
+   
+   if pixels > Y then pixels = Y
 
-   var img = ImageCreate( X, Y, Global_IRC.Global_Options.BackGroundColour )
-   var nimg = ImageCreate( X, pixels, Global_IRC.Global_Options.BackGroundColour )
-
+   if X <> ss_x or Y <> ss_y then
+      if ss_img <> 0 then ImageDestroy( ss_img )
+      ss_img = ImageCreate( X, Y + 1, Global_IRC.Global_Options.BackGroundColour )
+      ss_x = X
+      ss_y = Y
+   EndIf
+   if X <> ss_nx or pixels > ss_ny then
+      if ss_nimg <> 0 then ImageDestroy( ss_nimg )
+      ss_nimg = ImageCreate( X, pixels + 1, Global_IRC.Global_Options.BackGroundColour )
+      ss_nx = X
+      ss_ny = pixels
+   end if
+   
    screenlock
 
    view
-   Get ( ULW, 21 ) - ( SR_x - 14, SR_y - 17 ), img
-
+   'grab the old without the new message
+   Get ( VPX1, VPY1 ) - ( VPX2, VPY2 ), ss_img
+   
+   'upgrade the screen while locked with the new messages
    UpdateChatListScroll( ChatScrollBarY, 1 )
 
    view
-   get ( ULW, SR_y - 16 - pixels ) - ( SR_x - 13, SR_y - 17 ), nimg
+   'grab the new pixels
+   get ( VPX1, VPY2 - pixels ) - ( VPX2, VPY2 ), ss_nimg
 
    view ( VPX1, VPY1 )-( VPX2, VPY2 )
-   put ( 0, 0 ), img, pset
+   'throw the old message back in
+   put ( 0, 0 ), ss_img, pset
 
    screenunlock
 
-   dim as integer flag, pp, pixstep = Global_IRC.TextInfo.ChatBoxCharSizeY \ 4
+   dim as integer pp, sleepDur = 30
    dim as fb.event e
 
-   for i as integer = 1 to ( 4 * LinesAdded )
-
-      pp -= pixstep
+   do
+      pp -= 1
       screenlock
       view ( VPX1, VPY1 )-( VPX2, VPY2 )
-      put ( 0, pp ), img, pset
-      put ( 0, Y + pp - 4 ), nimg, pset
+      put ( 0, pp ), ss_img, pset
+      put ( 0, Y + pp - 4 ), ss_nimg, pset
+      view
+      If Global_IRC.WindowActive <> 0 Then
+         ChatInput.CursorBlink( )
+      EndIf
       screenunlock
-      sleep( 26, 1 )
+      
+      sleep( sleepDur, 1 )
+      
       while ScreenEvent( @e )
          select case e.type
-         case fb.EVENT_MOUSE_MOVE, fb.EVENT_KEY_RELEASE
+         case fb.EVENT_MOUSE_MOVE
+         case fb.EVENT_KEY_RELEASE
             ParseScreenEvent( e )
+            ChatInput.Print()
          case fb.EVENT_KEY_REPEAT, fb.EVENT_KEY_PRESS
             Select Case e.ascii
                Case 32 To 126
                   ParseScreenEvent( e )
                Case Else
-                  if Parse_Scancode( e.scancode ) then
-                     flag = 1
-                     exit for
+                  if Parse_Scancode( e.scancode ) = TRUE then
+                     exit do
                   endif
             End Select
          case fb.EVENT_MOUSE_ENTER, fb.EVENT_MOUSE_EXIT
          case else
-            flag = 1
-            exit for
+            ParseScreenEvent( e )
+            exit do
          end select
       Wend
+      
+      if Pending_Message() then
+         For i As Integer = 0 To Global_IRC.NumServers - 1
+            if Server_ptr <> Global_IRC.Server[i] then
+               while Global_IRC.Server[i]->ParseMessage() = TRUE
+                  sleep 1,1
+               Wend
+               if Global_IRC.CurrentRoom <> @this then
+                  exit do
+               EndIf 
+            else
+               if Server_ptr->ServerSocket.Length( ) > 0 then
+                  pp -= Server_ptr->ServerSocket.Length() \ 512
+                  if sleepDur > 26 then
+                     sleepDur -= 1
+                  endif
+               EndIf
+            EndIf
+         Next
+      end if
 
-   Next
-
-   view
-
-   ImageDestroy( img )
-   ImageDestroy( nimg )
-
-   if flag = 1 then
-      ParseScreenEvent( e )
-   endif
-
-   if @this = Global_IRC.CurrentRoom then
+   loop until pp < ( 5 - pixels )
+   
+   if Global_IRC.CurrentRoom = @this then
       PrintChatBox( 1 )
    EndIf
+   
+   view
+
 
 End sub
 
@@ -668,13 +710,11 @@ function UserRoom_type.AddLOTEX _
    ' 3rd
    If (flags AND Backlogging) = 0 Then
       CurrentLine += 1
-      If ( @this = Global_IRC.CurrentRoom ) And ( PrintNow = 1 ) and ( Spawned = 0 ) And ( ( Global_IRC.WindowActive or Global_IRC.Global_Options.ShowInactive ) <> 0 ) then
-         If ( (Global_IRC.LastCL_Print + Global_IRC.Global_Options.MinPerLine) < Timer ) or ( NewLine->MesID = LineBreak ) Then
-            if Global_IRC.Global_Options.SmoothScroll = 0 then
-               UpdateChatListScroll( ChatScrollBarY, 1 )
-            else
-               SmoothScroll( LinesAdded )
-            endif
+      If ( @this = Global_IRC.CurrentRoom ) And ( PrintNow = 1 ) and ( Spawned = 0 ) And ( (Global_IRC.WindowActive <> 0) or (Global_IRC.Global_Options.ShowInactive <> 0) ) then
+         if Global_IRC.Global_Options.SmoothScroll <> 0 and RoomType = Channel then
+            SmoothScroll( LinesAdded )
+         elseIf ( (Global_IRC.LastCL_Print + Global_IRC.Global_Options.MinPerLine) < Timer ) or ( NewLine->MesID = LineBreak ) Then
+            UpdateChatListScroll( ChatScrollBarY, 1 )
          ElseIf Global_IRC.printQueue_C = 0 then
             Dim As event_Type et
             et.id = Screen_Update_ChatList
@@ -705,7 +745,7 @@ function UserRoom_type.AddLOTEX _
             Delete TextArray[ i ]
          Next
          if NumAllocated > MBL then
-            NumAllocated = NumLines + 128
+            NumAllocated = NumLines + 512
          EndIf
          NewLocation = Allocate( ps * NumAllocated )
          memcpy( NewLocation, @( TextArray[Start] ), ps * NumLines )
@@ -716,7 +756,7 @@ function UserRoom_type.AddLOTEX _
    EndIf
 
    if NumLines = NumAllocated then
-      NumAllocated += 128
+      NumAllocated += 512
       NewLocation = reallocate( TextArray, ps * NumAllocated )
       if NewLocation = 0 then
          NewLocation = Allocate( ps * NumAllocated )
@@ -743,29 +783,31 @@ Sub UserRoom_type.PrintChatBox( ByRef Forced As Integer = 0 )
    EndIf
 
    Dim Pen_X            As Integer
-   Dim Pen_Y            As Integer = Global_IRC.Global_Options.ScreenRes_y - Global_IRC.TextInfo.ChatBoxCharSizeY - 37 ' (16 + 21)
+   Dim Pen_Y            As Integer = Global_IRC.Global_Options.ScreenRes_y - Global_IRC.TextInfo.ChatBoxCharSizeY * 0.75 - 37 ' (16 + 21)
    Dim TimeStampSize    As Integer
    Dim MinClip          As Integer = -( Global_IRC.TextInfo.ChatBoxCharSizeY * 0.45 )
 
    Global_IRC.LastLOT = TextArray[i]
 
+   with Global_IRC.Global_Options
    ScreenLock
-   view ( UserListWidth, 21 )-( Global_IRC.Global_Options.ScreenRes_x - 13, Global_IRC.Global_Options.ScreenRes_y - 16 ), Global_IRC.Global_Options.BackGroundColour
-   'line ( UserListWidth, 21 )-( Global_IRC.Global_Options.ScreenRes_x - 13, Global_IRC.Global_Options.ScreenRes_y - 16 ), Global_IRC.Global_Options.BackGroundColour, bf
+   view ( UserListWidth, 21 )-( .ScreenRes_x - 13, .ScreenRes_y - 16 ), .BackGroundColour
+   'line ( UserListWidth, 21 )-( .ScreenRes_x - 13, .ScreenRes_y - 16 ), .BackGroundColour, bf
 '  ^ for PrintLOT ^ (disable view)
    
    var tmp = ""
    var TempInt = 0
    
+   
    Do Until ( i < 0 ) Or ( PEN_Y < MinClip )
       #if 0
-      PrintLOT( TextArray[ i ], 0, Pen_Y, Global_IRC.Global_Options.TextColour, Global_IRC.Global_Options.BackGroundColour )
+      PrintLOT( TextArray[ i ], 0, Pen_Y, .TextColour, .BackGroundColour )
       #else
       var LOT = TextArray[ i ]
-      var TS = iif( ( LOT->MesID < 50 ) and ( ( LOT->MesID And 1 ) = 0 ) And ( Global_IRC.Global_Options.ShowTimeStamp <> 0 ), TRUE, FALSE )
+      var TS = iif( ( LOT->MesID < 50 ) and ( ( LOT->MesID And 1 ) = 0 ) And ( .ShowTimeStamp <> 0 ), TRUE, FALSE )
       Pen_X = 4
       If TS = TRUE then
-         TimeStampSize = DrawString( Pen_x, Pen_Y, LOT->TimeStamp, Global_IRC.Global_Options.TextColour ) - Pen_X
+         TimeStampSize = DrawString( Pen_x, Pen_Y, LOT->TimeStamp, .TextColour ) - Pen_X
          Pen_x += TimeStampSize
       EndIf
       Select case LOT->MesID
@@ -776,26 +818,27 @@ Sub UserRoom_type.PrintChatBox( ByRef Forced As Integer = 0 )
                Pen_x = DrawString( Pen_X, Pen_Y, tmp, LOT->Colour )
             endif
             tmp = Mid( LOT->Text, TempInt + 1 )
-            DrawString( Pen_X, Pen_Y, tmp, Global_IRC.Global_Options.TextColour )
+            DrawString( Pen_X, Pen_Y, tmp, .TextColour )
 
          Case ExNormalChat
-            DrawString( 24, Pen_Y, LOT->Text, Global_IRC.Global_Options.TextColour )
+            DrawString( 24, Pen_Y, LOT->Text, .TextColour )
          Case LineBreak
-            Line ( 40, Pen_Y + Global_IRC.TextInfo.ChatBoxCharSizeY \ 4 )-( TextBoxWidth - 53, Pen_Y + Global_IRC.TextInfo.ChatBoxCharSizeY \ 4 ), LOT->Colour, , &b1111000011110000
+            dim as integer yDivisor = iif( .FontRender = fbgfx, 2, 4 )
+            Line ( 40, Pen_Y + Global_IRC.TextInfo.ChatBoxCharSizeY \ yDivisor )-( TextBoxWidth - 53, Pen_Y + Global_IRC.TextInfo.ChatBoxCharSizeY \ yDivisor ), LOT->Colour, , &b1111000011110000
             if len_hack( LOT->Text ) then
-               TempInt = CWidth( LOT->Text )
+               TempInt = iif( .FontRender = fbgfx, len_hack( LOT->Text ) * 8, CWidth( LOT->Text ) )
                Pen_X = ( TextBoxWidth \ 2 ) - ( TempInt \ 2 ) - 7
-               Line ( Pen_X - 4, Pen_Y )-( Pen_X + 4 + TempInt, Pen_Y + Global_IRC.TextInfo.ChatBoxCharSizeY - 1 ), Global_IRC.Global_Options.BackGroundColour, BF
+               Line ( Pen_X - 4, Pen_Y + Global_IRC.TextInfo.ChatBoxCharSizeY \ yDivisor )-( Pen_X + 4 + TempInt, Pen_Y + Global_IRC.TextInfo.ChatBoxCharSizeY \ yDivisor ), .BackGroundColour
                DrawString( Pen_X, Pen_Y, LOT->Text, LOT->Colour )
             endif
          'Case ServerMessage
-            'DrawString( 4, Pen_Y, LOT->Text, LOT->Colour, Global_IRC.Global_Options.ChatBoxFont, Global_IRC.Global_Options.ChatBoxFontSize )
+            'DrawString( 4, Pen_Y, LOT->Text, LOT->Colour, .ChatBoxFont, .ChatBoxFontSize )
          'Case ExServerMessage
-            'DrawString( 24, Pen_Y, LOT->Text, LOT->Colour, Global_IRC.Global_Options.ChatBoxFont, Global_IRC.Global_Options.ChatBoxFontSize )
+            'DrawString( 24, Pen_Y, LOT->Text, LOT->Colour, .ChatBoxFont, .ChatBoxFontSize )
          case ChatHistory
             DrawString( Pen_X, Pen_Y, LOT->Text, LOT->Colour )
          case ExChatHistory
-            DrawString( 24, Pen_Y, LOT->Text, Global_IRC.Global_Options.ChatHistoryColour )
+            DrawString( 24, Pen_Y, LOT->Text, .ChatHistoryColour )
          Case Else
             DrawString( IIf( LOT->MesID And 1, 24, 4 + IIf( TS, TimeStampSize, 0 ) ), Pen_Y, LOT->Text, LOT->Colour )
       End Select
@@ -827,6 +870,7 @@ Sub UserRoom_type.PrintChatBox( ByRef Forced As Integer = 0 )
    Loop
 
    ScreenUnLock
+   end with
    view
 
    Global_IRC.LastCL_Print = Timer
@@ -850,14 +894,6 @@ Sub UserRoom_type.DetectLinks( ByVal NumLinesAdded As Integer )
          @"#" _
       }
 
-   static HLS( 0 to 4 ) as string
-
-   if str_len( HLS(0) ) = 0 then
-      for i as integer = 0 to ubound( HyperLinkSearch )
-         HLS(i) = *HyperLinkSearch(i)
-      Next
-   EndIf
-
    if NumLinesAdded > ( NumLines + 1 ) then
       NumLinesAdded = NumLines + 1
    EndIf
@@ -878,9 +914,9 @@ Sub UserRoom_type.DetectLinks( ByVal NumLinesAdded As Integer )
          var LinkFound = Length
 
          #if 0
-         'Old Method, faster?
+         'Old Method, faster with static HLS?
          For i As Integer = 0 To ubound( HyperLinkSearch )
-            Var TempInStr = InStr( InStrStart, UCaseText, HLS(i) )
+            Var TempInStr = InStr( InStrStart, UCaseText, *HyperLinkSearch(i) )
             If ( TempInStr > 0 ) And ( TempInStr < LinkFound ) Then
                LinkFound = TempInStr
             EndIf
@@ -1188,7 +1224,7 @@ Function UserRoom_type.Find( ByRef user As String ) As UserName_type Ptr
 
    if Rev = FALSE then
 
-      For i As Integer = 1 To NumUsers
+      For i As typeof(NumUsers) = 1 To NumUsers
 
          If SortFind = UNT->Sort Then
             If ( len_hack( UcaseName ) < 9 ) and ( len_hack( UcaseName ) = len_hack( UNT->UserName ) ) Then
@@ -1207,7 +1243,7 @@ Function UserRoom_type.Find( ByRef user As String ) As UserName_type Ptr
 
    else
 
-      For i As Integer = 1 To NumUsers
+      For i As typeof(NumUsers) = 1 To NumUsers
 
          If SortFind = UNT->Sort Then
             If ( len_hack( UcaseName ) < 9 ) and ( len_hack( UcaseName ) = len_hack( UNT->UserName ) ) Then
@@ -1232,7 +1268,7 @@ End Function
 
 Sub UserRoom_type.PrintUserList( ByRef Forced As Integer = 0 )
 
-   dim as integer Pen_Y
+   dim as integer Pen_Y = 4
    dim as string tmp
    var UNT = TopDisplayedUser
 
@@ -1491,7 +1527,7 @@ Destructor UserRoom_type
       var UNT = FirstUser
       var UNT2 = UNT->NextUser
 
-      For i As Integer = 1 To NumUsers - 1
+      For i As typeof(NumUsers) = 1 To NumUsers - 1
          Delete UNT
          UNT = UNT2
          UNT2 = UNT2->NextUser
@@ -1507,15 +1543,14 @@ Destructor UserRoom_type
       Global_IRC.DCC_List.Remove( DT->ID )
    EndIf
 #endif
-
-   For i As Integer = 0 To ( NumLines - 1 )
-      Delete TextArray[i]
-   Next
    
    if OldUsers then
       DeAllocate( OldUsers )
    EndIf
    
+   For i As typeof(NumLines) = 0 To ( NumLines - 1 )
+      Delete TextArray[i]
+   Next
    DeAllocate( TextArray )
 
    RoomName = ""

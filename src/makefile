@@ -11,7 +11,7 @@ SRC = lic.bas lic-dcc.bas lic-dcc-send.bas lic-drawstring.bas lic-event_handler.
 		lic-events-mouse_press.bas lic-events-mouse_release.bas lic-font.bas lic-global.bas \
 		lic-input.bas lic-main-parse.bas lic-misc.bas lic-numeric.bas lic-options.bas lic-room.bas \
 		lic-rtl.bas lic-rtl-asm.bas lic-server.bas lic-server-parse.bas lic-systray.bas \
-		lic-server-privmsg.bas lic-server-rpl.bas lic-dcc-parse-irc.bas
+		lic-server-privmsg.bas lic-server-rpl.bas lic-dcc-parse-irc.bas lic-httpsimple.bas
 
 OBJ = $(SRC:%.bas=%.o)
 

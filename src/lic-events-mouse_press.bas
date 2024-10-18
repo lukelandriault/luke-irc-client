@@ -190,7 +190,9 @@ Sub LIC_Event_Mouse_Press( ByRef G As gui_event Ptr )
          HalfY = Screen_Y \ 2
 
          var URT = Global_IRC.CurrentRoom
-
+         var SS = Global_IRC.Global_Options.Smoothscroll
+         Global_IRC.Global_Options.Smoothscroll = 0
+         
          ScreenLock
 
          Do while URT = Global_IRC.CurrentRoom
@@ -254,8 +256,9 @@ Sub LIC_Event_Mouse_Press( ByRef G As gui_event Ptr )
             endif
 
          Loop
-
+         
          ScreenUnLock
+         Global_IRC.Global_Options.Smoothscroll = SS
 
          Line ( HalfX - 30, HalfY - 8 ) - Step( 92, 16 ), Global_IRC.Global_Options.BackGroundColour, BF
          if ( Global_IRC.Global_Options.FontRender = WinAPI ) and ( G->X > LIC_DRAWFONT_X ) then G->X = LIC_DRAWFONT_X

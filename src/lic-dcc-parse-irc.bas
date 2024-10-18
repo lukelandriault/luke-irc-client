@@ -6,8 +6,9 @@
 sub DCC_Parse_IRC( byref imsg as irc_message, byref server as Server_Type ptr )
 
    dim as string msg, Param(), cmd
-   dim as integer TempInt, IP, token
-   Dim As UShort Port
+   dim as integer token
+   dim as int32_t TempInt, IP
+   Dim As uint16_t Port
    Dim As UInteger FileSize
 
    dim as string Params = *imsg.Param( imsg.ParamCount )

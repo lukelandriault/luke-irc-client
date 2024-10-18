@@ -478,14 +478,14 @@ Function Server_Type.RoomCheck( byref r as any ptr ) as UserRoom_Type ptr
 
 End Function
 
-Sub Server_type.DelRoom( ByRef r As string )
+Sub Server_Type.DelRoom( ByRef r As string )
 
    var URT = Find( r )
    If URT Then DelRoom( URT )
 
 End Sub
 
-Sub Server_type.DelRoom( Byref Room As UserRoom_type Ptr )
+Sub Server_Type.DelRoom( Byref Room As UserRoom_type Ptr )
 
    var URT = Room
 
@@ -582,7 +582,7 @@ Sub Server_type.DelRoom( Byref Room As UserRoom_type Ptr )
 
 End Sub
 
-Function Server_type.Find( ByRef room As zString Ptr ) As UserRoom_type Ptr
+Function Server_Type.Find( ByRef room As zString Ptr ) As UserRoom_type Ptr
 
    var URT = FirstRoom
    Var UcaseName = Ucase_( *room )
@@ -606,7 +606,7 @@ Function Server_type.Find( ByRef room As zString Ptr ) As UserRoom_type Ptr
 
 End Function
 
-Function Server_type.AddRoom( ByRef r As zString Ptr, byref roomtype as int16_t ) As UserRoom_type Ptr
+Function Server_Type.AddRoom( ByRef r As zString Ptr, byref roomtype as int16_t ) As UserRoom_type Ptr
 
    dim as string FirstLOT
    dim as uInt32_t FirstColour
@@ -737,7 +737,8 @@ End Function
 
 Sub IDENT_Server_Thread( )
 
-   dim as integer NumServers, Port, status
+   dim as integer NumServers, status
+   dim as uint16_t port
    dim as string UserID, SystemID
 
    with Global_IRC

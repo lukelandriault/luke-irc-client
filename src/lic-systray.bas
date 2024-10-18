@@ -1,6 +1,6 @@
 #define LIC_WIN_INCLUDE
 #Include Once "lic.bi"
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    #Include Once "win/shellapi.bi"
    #Include Once "win/mmsystem.bi"
 #else
@@ -9,7 +9,7 @@
 #EndIf
 #include Once "lic-systray.bi"
 
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    Dim Shared As WNDPROC OldWindowProc
    dim Shared As NOTIFYICONDATA NID
    Dim Shared As hIcon Tray_Icon(3)
@@ -39,7 +39,7 @@ Sub LIC_TrayINIT( )
    Static As Integer ran
    If ran = 1 Then Exit Sub
 
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
    /'
       1000 ICON "lic_1.ico"
@@ -93,7 +93,7 @@ Sub LIC_Screen_INIT( )
    Exit Sub
 #EndIf
 
-#Ifndef __FB_LINUX__
+#Ifdef __FB_WIN32__
    If ( Global_IRC.Global_Options.MinimizeToTray <> 0 ) and ( Global_IRC.HWND <> 0 ) then
       Shell_NotifyIcon( NIM_DELETE, @NID )
    EndIf
@@ -128,7 +128,7 @@ Sub LIC_Screen_INIT( )
 
    EndIf
 
-#Ifndef __FB_LINUX__
+#Ifdef __FB_WIN32__
    'This is a Mix of D.J Peters' and Zippy's code from the forum ( and help from Mysoft )
    'I had to take a bit of each to finally figure out a way to do what I wanted
    'It allows you to minimize to tray without having it on the taskbar when active =]
@@ -149,22 +149,20 @@ Sub LIC_Screen_INIT( )
 
    dim as integer ULW = iif( Global_IRC.CurrentRoom = 0, Global_IRC.Global_Options.DefaultUserListWidth, Global_IRC.CurrentRoom->UserListWidth )
 
-   ChatInput.Constructor( 	_
-                     ULW + 12, _ 'x1
-                     Global_IRC.Global_Options.ScreenRes_Y - 16, _ 'y1
-                     Global_IRC.Global_Options.ScreenRes_X, _ 'x2
-                     Global_IRC.Global_Options.ScreenRes_Y, _ 'y2
-                     Global_IRC.Global_Options.BackGroundColour, _ 'background colour
-                     Global_IRC.Global_Options.YourChatColour _ 'foreground colour
-                  )
-
+   ChatInput.x1 = ULW + 12
+   ChatInput.y1 = Global_IRC.Global_Options.ScreenRes_Y - 16
+   ChatInput.x2 = Global_IRC.Global_Options.ScreenRes_X
+   ChatInput.y2 = Global_IRC.Global_Options.ScreenRes_Y
+   ChatInput.BackGroundColour = Global_IRC.Global_Options.BackGroundColour
+   ChatInput.ForeGroundColour = Global_IRC.Global_Options.YourChatColour
+   
    Draw String ( ULW + 2, Global_IRC.Global_Options.ScreenRes_y - 16 ), ">", Global_IRC.Global_Options.YourChatColour
 
    Global_IRC.TextInfo.GetSizes( )
 
 End Sub
 
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
 Function NewWindowProc _
    ( _
@@ -235,7 +233,7 @@ End Function
 
 Sub LIC_Notify( ByRef Highlight As Integer = 0 )
 
-   #Ifndef __FB_LINUX__
+   #ifdef __FB_WIN32__
 
    With Global_IRC.Global_Options
 
@@ -321,7 +319,7 @@ Sub LIC_Notify( ByRef Highlight As Integer = 0 )
 
 End Sub
 
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
 Sub TrayFlashThread( )
    Dim As Integer c
@@ -347,7 +345,7 @@ End Sub
 
 Sub LIC_TrayFlash_STOP( )
 
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    If Global_IRC.Global_Options.MinimizeToTray <> 0 Then
       MutexLock( TrayMutex )
       If Tray_Flash_ON = 1 Then
@@ -372,7 +370,7 @@ End Sub
 
 Sub LIC_TrayShutdown( )
 
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    MutexLock( TrayMutex )
    If Tray_Flash_ON = 1 Then
       Tray_Flash_STOP = 1
@@ -392,7 +390,7 @@ End Sub
 
 Sub LIC_TrayRegenerate( )
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    
    MutexLock( TrayMutex )
    NID.hWnd = Cast( HWND, Global_IRC.HWND )

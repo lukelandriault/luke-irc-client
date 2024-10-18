@@ -1122,40 +1122,21 @@ Select Case scancode
                
             case "README"
                
-               dim as chi.socket sock
-   
-               if sock.client( "luke-irc-client.googlecode.com", 80 ) <> chi.SOCKET_OK then
-                  notice_gui( "error connecting to googlecode.com", rgb( 192, 0, 0 ) )
+               #define readme_url "https://raw.githubusercontent.com/lukelandriault/luke-irc-client/master/readme.txt"
+               dim as curl_obj cobj
+               var curl = curlget( readme_url, cobj, TRUE, FALSE )
+               if ( curl <> CURLE_OK ) or ( cobj.size = 0 ) then
+                  notice_gui( "error connecting to github : " & *iif( cobj.size, curl_easy_strerror(curl), @"404 not found" ), rgb( 192, 0, 0 ) )
                   return 0
                EndIf
-
-               var HTTPRequest = "GET /hg/readme.txt HTTP/1.1" CR_LF _
-            		               "Host: luke-irc-client.googlecode.com" CR_LF _
-            		               "Accept: text/html" CR_LF _
-            		               "User-Agent: Mozilla/5.0" CR_LF _
-            		               "Connection: Close" CR_LF CR_LF
                
-               sock.put( HTTPRequest[0], len(HTTPRequest) )
-               
-               dim as string response, buffer = space( 512 )
-               do until sock.Is_Closed( ) = TRUE and sock.length = 0
-                  var L = sock.length( )
-                  if L > 0 then
-                     if L > 512 then L = 512
-                     L = sock.get_data( @buffer[0], L )
-                     buffer[L] = 0
-                     str_len( buffer ) = L
-                     response += buffer
-                  else
-                     sleep( 1, 1 )
-                  EndIf
-               loop
-               
+               cobj.p[cobj.size] = 0
+               dim as string response = *cptr( zstring ptr, cobj.p )
+               deallocate( cobj.p )
+                              
                with Global_IRC
                .CurrentRoom->AddLOT( "*[ LIC readme.txt ]*", .Global_Options.ServerMessageColour, 0, LineBreak, 1 )
                dim as integer n, numlines = Global_IRC.CurrentRoom->NumLines
-               n = Instr( response, !"\r\n\r\n" )
-               response = mid( response, n + 4 )
                
                do
                   n = InStrASM( 1, response, asc(!"\n") )
@@ -1190,6 +1171,10 @@ Select Case scancode
 
             #If __FB_DEBUG__
             
+            case "CRASH" 'initiate a seg fault
+               dim as integer i = *cptr( integer ptr, 0 )
+               print "seg fault.." & i
+            
             case "GOTO"
                
                dim as uinteger i = valuint( RHS )
@@ -1204,6 +1189,7 @@ Select Case scancode
                msg(1) = "ADF HAHA DF E www.google.com WHAT!! LOL Www.yahoo.ca ASDF ASD ASDFEE #ASDF asdfj #freenode asdfjl #LIC ahdflj #FREEBASIC ashkdfhasjdf #DAF Fasdfhkjash www.lool.in"
 
                var URT2 = Global_IRC.CurrentRoom->Server_Ptr->Find( "LIC:TEST:ROOM" )
+               'Global_IRC.CurrentRoom->Server_Ptr->ServerOptions.TwitchHacks = 1
 
                if URT2 <> 0 then
                   Global_IRC.CurrentRoom->Server_Ptr->DelRoom( URT2 )
@@ -1223,7 +1209,7 @@ Select Case scancode
                next
                t1 = timer - t1
                
-               LIC_DEBUG( "done adding lines" )
+               LIC_DEBUG( "done adding lines, timer: " & t1 )
                
                dim as zstring * 9 user
                dim as integer userlen = 1
@@ -1237,7 +1223,7 @@ Select Case scancode
                Next
                t2 = timer - t2
                
-               LIC_DEBUG( "done adding users" )
+               LIC_DEBUG( "done adding users, timer: " & t2 & " (twitch hacks o" & *iif( Global_IRC.CurrentRoom->Server_Ptr->ServerOptions.TwitchHacks, @"n)", @"ff)" ) )
                
                URT2->AddLOT( "Adding " & valint( RHS ) & " lines took " & t1, Global_IRC.Global_Options.ServerMessageColour,0,,,,TRUE )
                URT2->AddLOT( "Adding " & valint( RHS ) & " users took " & t2, Global_IRC.Global_Options.ServerMessageColour,0,,,,TRUE )
@@ -1300,6 +1286,7 @@ Select Case scancode
                debug_gui( "Total Rooms: " & IRC_Total_Rooms & " Hidden Rooms: " & IRC_Hidden_Rooms )
                debug_gui( "Total Users: " & IRC_Total_Users )
                debug_gui( "Total Lines: " & IRC_Total_Lines )
+               debug_gui( "Total IRC messages: " & Global_IRC.msgCount )
                If ( Global_IRC.Global_Options.LogToFile <> 0 ) And ( Global_IRC.Global_Options.LogBufferSize > 0 ) Then
                   debug_gui( "Log Buffer: " & Global_IRC.LogLength & " / " & Global_IRC.Global_Options.LogBufferSize )
                EndIf
@@ -1549,7 +1536,7 @@ Select Case scancode
       LIC_Debug( "\\Forced Disconnect" )
 
    Case SC_F9
-      BSave "Irc SS " & Date & ".bmp", 0
+      BSave "LIC SS " & Date & ".bmp", 0
       debug_gui( "Screenshot Saved" )
 
    #endif
@@ -1571,9 +1558,44 @@ Select Case scancode
       else
          goto ScanCodeElse
       EndIf
+
+#if LIC_FREETYPE
+
+   case SC_PLUS, SC_MINUS 'Resize font for chat window
+      Global_IRC.Global_Options.ChatBoxFontSize += iif( scanCode = SC_PLUS, 1, -1 )
+      Notice_Gui( "Font Size Changed: " & Global_IRC.Global_Options.ChatBoxFontSize, Global_IRC.Global_Options.ServerMessageColour )
+      if Global_IRC.Global_Options.FontRender = FreeType then
       
+         with Global_IRC.TextInfo
+
+         dim as integer freetype_cleanup = 0
+         if font.ttf_init() <> font.no_error then
+            LIC_DEBUG( "\\FreeType error on init:" & font.geterror( ) )
+            freetype_cleanup = 1
+         elseif .FT_C.Load_TTFont( Global_IRC.Global_Options.ChatBoxFont, Global_IRC.Global_Options.ChatBoxFontSize, 32, 126 ) <> font.no_error then
+            LIC_DEBUG( "\\FreeType error in ChatBoxFont:" & font.geterror( ) )
+            freetype_cleanup = 1
+         end if
+
+         if freetype_cleanup then
+            .FT_C.Destructor( )
+            .FT_U.Destructor( )
+            Global_IRC.Global_Options.FontRender = fbgfx
+         end if
+
+         end with
+         
+         Global_IRC.TextInfo.GetSizes( )
+         LIC_ResizeAllRooms( 1 )
+         font.ttf_deinit()
+
+      endif
+
+#endif
+
    Case Else
 ScanCodeElse:
+
       ChatInput.Parse( scanCode )
       Function = FALSE
 
@@ -1585,7 +1607,7 @@ End Function
 Sub TestInput( )
 
    'FIXME!!!
-   'Need a sub that will test every possible input
+   'Need a sub that will test fuzzing / every possible input for bugs
 
 End Sub
 #endif

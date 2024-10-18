@@ -1,6 +1,6 @@
 '#define fbc -g -p chisock/lib/win32 -i chisock/ -d __LIC__=-1 -gen gcc
 ' LIC Run Time module
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    #include once "windows.bi"
    #include once "win/commdlg.bi"
 #else
@@ -414,7 +414,7 @@ Function SafeFileNameEncode( ByRef in As String ) As String
 
       Select Case In[i]
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
          Case 	1 to 31, Asc("\"), Asc("/"), Asc("|"), Asc("?"), Asc(":"), _
                Asc("*"), Asc("<"), Asc(">"), Asc(""""), Asc("^") ' ^ for fat32, rare but whatever..
 #else
@@ -436,7 +436,7 @@ Function SafeFileNameEncode( ByRef in As String ) As String
       Ret += " " + String( bad, "_" )
    EndIf
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    select case left( lcase( ret ), 3 )
       case "com", "lpt" 'com1-9 & lpt1-9 are invalid
          if len( rtrim( ret, "." ) ) = 4 then
@@ -455,8 +455,14 @@ End Function
 
 Function SortCreate( ByRef Key As String ) As uint64_t
 
-   dim As ZString * 9 zS
-   zS = Key
+   dim as uint64_t x
+   if len_hack( key ) < 7 then
+      dim as zstring * 9 zS
+      zS = Key
+      x = *cptr( uint64_t ptr, @zS )
+   else
+      x = *cptr( uint64_t ptr, str_loc( key ) )
+   end if  
 
    /'
       Code reverses the bytes
@@ -466,14 +472,15 @@ Function SortCreate( ByRef Key As String ) As uint64_t
       7 6 5 4 3 2 1 0
    '/
 
-   dim as ubyte ptr b = @zS
-
-   swap b[0], b[7]
-   swap b[1], b[6]
-   swap b[2], b[5]
-   swap b[3], b[4]
-
-   Function = *cptr( uint64_t ptr, b )
+   return ( _ 
+      (((x) AND &hff00000000000000ull) shr 56)        _
+   OR (((x) AND &h00ff000000000000ull) shr 40)        _
+   OR (((x) AND &h0000ff0000000000ull) shr 24)        _
+   OR (((x) AND &h000000ff00000000ull) shr 8)         _
+   OR (((x) AND &h00000000ff000000ull) shl 8)         _
+   OR (((x) AND &h0000000000ff0000ull) shl 24)        _
+   OR (((x) AND &h000000000000ff00ull) shl 40)        _
+   OR (((x) AND &h00000000000000ffull) shl 56) )
 
 End Function
 
@@ -481,7 +488,7 @@ End Function
 
 Function MkDirTree( byref folder as string ) as integer
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
    var d = trim( folder, any " \/""" )
    var cwd = curdir
@@ -584,7 +591,7 @@ Function MaskCompare( Byref from as String, Byref mask as String ) as Integer
 
 End Function
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
 function w32_GetFilename( byval title as zstring ptr = 0 ) as string
 

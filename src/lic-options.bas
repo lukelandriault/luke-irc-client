@@ -50,7 +50,7 @@ Function IRC_Options_Type.Set_Value( byref lhs as string, byref rhs as string ) 
          select case ucase( rhs )
          case "FREETYPE"
             FontRender = FreeType
-         #ifndef __FB_LINUX__
+         #ifdef __FB_WIN32__
          case "WINAPI"
             FontRender = WinAPI
          #endif
@@ -92,6 +92,7 @@ Function IRC_Options_Type.Set_Value( byref lhs as string, byref rhs as string ) 
          MinPerLine = val( rhs )
       Case "USERLISTFONTSIZE"
          UserListFontSize = valInt( rhs )
+         if UserListFontSize < 4 then UserListFontSize = 4
       Case "CHATBOXFONTSIZE"
          ChatBoxFontSize = valInt( rhs )
       Case "SCREENRESX"
@@ -192,10 +193,16 @@ Function IRC_Options_Type.Set_Value( byref lhs as string, byref rhs as string ) 
          endif
       case "ALWAYSONTOP"
          AlwaysOnTop = _BOOL( rhs )
+      case "SWITCHONJOIN"
+         SwitchOnJoin = _BOOL( rhs )
       case "TIMESTAMPUSECRT"
          TimeStampUseCRT = _BOOL( rhs )
       case "TWITCHKILLEMOTES"
          Global_IRC.CurrentRoom->Server_Ptr->ServerOptions.TwitchKillEmotes = _BOOL( rhs )
+      case "TWITCHFOLLOWHOSTS"
+         Global_IRC.CurrentRoom->Server_Ptr->ServerOptions.TwitchFollowHosts = _BOOL( rhs )
+      case "CTCPIGNOREMULTI"
+         CTCPIgnoreMulti = _BOOL( rhs )
          
          
 ''''  COLOURS
@@ -386,7 +393,7 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
 
             case "LOGFOLDER"
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
                .LogFolder = rtrim( rhs, any "/\ " )
                if instr( rhs, ":\" ) = 0 then
                   .LogFolder = ExePath + "/log/" + .LogFolder
@@ -502,7 +509,7 @@ Sub IRC_Options_Type.Load_Options( ByRef FirstRun As Integer = 0 )
       FontRender = fbgfx
 #endif
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    elseif FontRender = WinAPI then
 
       with Global_IRC.TextInfo
@@ -628,9 +635,14 @@ Sub TextInfo_type.GetSizes( )
          EndIf
 
       Next
-
-      ChatBoxCharSizeY = FT_C.size_ + FT_C.size_ \ 2 + 2
-      UserListCharSizeY = FT_U.size_ + FT_U.size_ \ 2 + 2
+      
+      if .Global_Options.FontRender = freetype then
+         ChatBoxCharSizeY = FT_C.size_
+         UserListCharSizeY = FT_U.size_
+      else      
+         ChatBoxCharSizeY = FT_C.size_ + FT_C.size_ \ 2 + 2
+         UserListCharSizeY = FT_U.size_ + FT_U.size_ \ 2 + 2
+      EndIf
 
    else 'fbgfx
 
@@ -687,7 +699,7 @@ Constructor IRC_Options_Type
       LogMaxFileSize          = 0
       LogMaxFileAction        = LogCopy
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
       FontRender            = WinAPI
 #else
       FontRender            = FreeType
@@ -722,6 +734,7 @@ Constructor IRC_Options_Type
       IdentEnable           = 0
       DisableQuickCopy      = 0
       AlwaysOnTop           = 0
+      SwitchOnJoin          = 1
       TimeStampUseCRT       = 0
 
 
@@ -792,6 +805,7 @@ Constructor Server_Options_Type
    ScriptFile        = ""
 
    DccAutoAccept     = 0
+   TwitchFollowHosts = 1
    TwitchHacks       = 0
    TwitchKillEmotes  = 0
 

@@ -77,4 +77,4 @@ Declare Sub DCC_Parse( ByRef In_ As String )
 Declare Sub DCC_FILE_ACCEPT_THREAD( ByVal DT As DCC_TRACKER Ptr )
 Declare Sub DCC_FILE_SEND_THREAD( ByVal DT As DCC_TRACKER Ptr )
 Declare Function DCC_CHAT_Out( Byref as string ) as integer
-Declare function DCC_BIND( byval sock as any ptr, byref port as ushort ) as integer
+Declare function DCC_BIND( byval sock as any ptr, byref port as uint16_t ) as integer

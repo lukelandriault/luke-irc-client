@@ -6,42 +6,21 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
 
 ':LukeL!n=Luke@unaffiliated/lukel PRIVMSG ##FreeBASIC :hello
 
-   dim as integer action, unknown, TempInt
+   dim as int32_t action, TempInt
    dim as LOT_MultiColour_Descriptor MCD
    
    'CTCP :
-
    If ( len_hack( imsg.msg ) > 2 ) andalso ( ( imsg.msg[0] = 1 ) and ( imsg.msg[ len_hack( imsg.msg ) - 1 ] = 1 ) ) Then
       dim as string IRC_Reply
       TempInt = InStrAsm( 2, imsg.msg, Asc(" ") )
       If TempInt = 0 Then TempInt = len_hack( imsg.msg )
-      var CTCP_CMD = UCase( mid( imsg.msg, 2, TempInt - 2 ) )
-      if StringEqualASM( CTCP_CMD, "ACTION" ) then
-         action = 1
-      else
-         #if 0 'Ignore multi-target CTCP?
-         If StringEqualASM( Ucase_( *imsg.Param( 0 ) ), UCurrentNick ) = 0 Then
-            Exit Sub
-         EndIf
-         #endif
-
-         '15 CTCP in 30 seconds or less will automatically add a filter script
-         CtcpCount += 1
-         if Timer > CtcpTimer then
-            CtcpTimer = Timer + 30
-            CtcpCount = 1
-         elseif CtcpCount >= 15 then
-            AddScript( "ctcpfilter" )
-            Lobby->AddLOT( "** Some jerk is sending a lot of CTCP spam, a filter script has been added to ignore CTCP. Use /script to view or remove it", Global_IRC.Global_Options.ServerMessageColour, , , , , TRUE )
-            Lobby->pflags OR= FlashingTab
-            CtcpTimer = 0
-            exit sub
-         end if
-
-      EndIf
-      TempInt = *cptr( integer ptr, @CTCP_CMD[0] )
+      dim as zstring * 8 CTCP_CMD = UCase( mid( imsg.msg, 2, TempInt - 2 ) )
+      TempInt = *cptr( int32_t ptr, @CTCP_CMD[0] )
+      
       Select Case TempInt
-         Case *cptr( integer ptr, @"VERS" ) 'VERSION
+         case *cptr( int32_t ptr, @"ACTI" ) 'ACTION
+            action = 1
+         Case *cptr( int32_t ptr, @"VERS" ) 'VERSION
             If Global_IRC.Global_Options.ShowCTCP <> 0 then
                MCD = Type( 10, 12, Global_IRC.Global_Options.WhisperColour )
                if Global_IRC.CurrentRoom->Server_Ptr = @this then
@@ -63,7 +42,7 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
                   IRC_Build_env ":" _
                   IRC_Version_http & chr(1)
             EndIf
-         case *cptr( integer ptr, @"TIME" )
+         case *cptr( int32_t ptr, @"TIME" )
             If Global_IRC.Global_Options.ShowCTCP <> 0 Then
                MCD = Type( 10, 9, Global_IRC.Global_Options.WhisperColour )
                if Global_IRC.CurrentRoom->Server_Ptr = @this then
@@ -75,7 +54,7 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
             EndIf
             Var T = time_
             IRC_Reply = "NOTICE " & imsg.From & !" :\1TIME " & RTrim( *ctime( @T ), Any NewLine ) & chr(1)
-         case *cptr( integer ptr, @"PING" )
+         case *cptr( int32_t ptr, @"PING" )
             If Global_IRC.Global_Options.ShowCTCP <> 0 Then
                MCD = Type( 10, 9, Global_IRC.Global_Options.WhisperColour )
                if Global_IRC.CurrentRoom->Server_Ptr = @this then
@@ -88,26 +67,43 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
             IRC_Reply = "NOTICE " & imsg.From & " :" & imsg.msg
 
 #if LIC_DCC
-         Case *cptr( integer ptr, @"DCC" )
+         Case *cptr( int32_t ptr, @"DCC" )
 
             DCC_Parse_IRC( imsg, @this )
 #endif
 
          case else
 
-            unknown = 1
+            exit sub 'unknown
 
       End Select
+
+      if action = 0 then
+      
+         if Global_IRC.Global_Options.CTCPIgnoreMulti <> 0 then 'Ignore multi-target CTCP?
+            If StringEqualASM( Ucase_( *imsg.Param( 0 ) ), UCurrentNick ) = 0 Then
+               Exit Sub
+            EndIf
+         endif    
+     
+         CtcpCount += 1 '15 CTCP in 30 seconds or less will automatically add a filter script
+         if Timer > CtcpTimer then
+            CtcpTimer = Timer + 30
+            CtcpCount = 1
+         elseif CtcpCount >= 15 then
+            AddScript( "ctcpfilter" )
+            Lobby->AddLOT( "** Some jerk is sending a lot of CTCP spam, a filter script has been added to ignore CTCP. Use /script to view or remove it", Global_IRC.Global_Options.ServerMessageColour, , , , , TRUE )
+            Lobby->pflags OR= FlashingTab
+            CtcpTimer = 0
+            exit sub
+         end if
+      EndIf
 
       If len_hack( IRC_Reply ) then
          If Global_IRC.Global_Options.ShowCTCP <> 0 then
             imsg.URT->AddLOT( "CTCP Reply to " & imsg.From & ": " & Trim( mid( IRC_Reply, InStrAsm( 1, IRC_Reply, Asc(":") ) + 1 ), Chr(1) ), Global_IRC.Global_Options.ServerMessageColour )
          endif
          SendLine( IRC_Reply )
-      EndIf
-
-      if ( action = 0 ) and ( unknown = 1 ) then
-         Exit Sub
       EndIf
 
    EndIf
@@ -131,7 +127,7 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
          
          if ServerOptions.TwitchKillEmotes <> 0 then 'destroy any emote only messages
             if instr( imsg.MessageTag, "emote-only=1" ) then
-               Exit Sub 'peace out
+               Exit Sub 'peace out spammers
             EndIf
          EndIf
          
@@ -274,8 +270,7 @@ Sub Server_Type.Parse_Privmsg( byref imsg as irc_message )
       EndIf
 
       If Global_IRC.WindowActive = 0 Then
-         TempInt = iif( (imsg.URT->pflags AND DisableSound) = 0, 2, 1 )
-         LIC_Notify( TempInt )
+         LIC_Notify( iif( (imsg.URT->pflags AND DisableSound) = 0, 2, 1 ) )
       EndIf
       
       hilite = 1

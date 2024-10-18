@@ -43,7 +43,7 @@ type font_obj
    declare Function GetWidth( byref s as string ) as integer
 
    Declare Function Load_TTFont( byref font as string, size as integer, lower as integer = 0, upper as integer = 255 ) as integer
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    Declare Function Load_W32Font( byref font as string, _size_ as integer, lower as integer = 0, upper as integer = 255 ) as integer
 #endif
 
@@ -71,13 +71,16 @@ end namespace
 
 #if LIC_FREETYPE
 
-'#include once "freetype2/config/ftconfig.bi"
-'#include once "freetype2/fterrors.bi"
-'#include once "freetype2/fttypes.bi"
-#include once "freetype2/freetype.bi"
 
+#if 0 'static link?
+   #include once "freetype2/freetype.bi"
 
-#if 0
+#else
+
+#include once "freetype2/config/ftconfig.bi"
+#include once "freetype2/fterrors.bi"
+#include once "freetype2/fttypes.bi"
+
 #define FREETYPE_MAJOR 2
 #define FREETYPE_MINOR 1
 #define FREETYPE_PATCH 9
@@ -307,6 +310,9 @@ type FT_Open_Args as FT_Open_Args_
 #define FT_LOAD_LINEAR_DESIGN &h2000
 #define FT_LOAD_SBITS_ONLY &h4000
 #define FT_LOAD_NO_AUTOHINT &h8000U
+
+#define FT_LOAD_TARGET_(x) (cast(FT_Int32, (x) and 15) shl 16)
+#define FT_LOAD_TARGET_LCD FT_LOAD_TARGET_(FT_RENDER_MODE_LCD)
 
 enum FT_Render_Mode_
 	FT_RENDER_MODE_NORMAL = 0

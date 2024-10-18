@@ -120,14 +120,14 @@ Function DCC_TRACKER.GetError( ) As String
 
 End Function
 
-function DCC_BIND( byval sock as any ptr, byref port as ushort ) as integer
+function DCC_BIND( byval sock as any ptr, byref port as uint16_t ) as integer
 
    dim as integer ret
    dim as chi.socket ptr s = sock
 
    For i as integer = 0 To 1023
 
-      ret = s->server( cast( long, port ) )
+      ret = s->server( cast( int32_t, port ) )
       If ret = chi.SOCKET_OK Then
          return ret
       EndIf
@@ -182,7 +182,7 @@ Sub DCC_REQUEST( ByRef DCC_USER As String, ByRef DCC_TYPE As Integer, ByRef DCC_
    Var DCC_SOCK = New chi.socket
    If DCC_SOCK = 0 Then Exit Sub
 
-   dim as ushort DCC_PORT = Global_IRC.Global_Options.DCC_port
+   dim as uint16_t DCC_PORT = Global_IRC.Global_Options.DCC_port
    dim as integer sock_status = DCC_BIND( DCC_SOCK, DCC_PORT )
 
    If sock_status <> chi.SOCKET_OK Then
@@ -427,7 +427,7 @@ Sub DCC_Parse( ByRef In_ As String )
                sleep( 250, 1 )
                ScopeLock( ptr_->mutex )
                port = ptr_->port
-               ip = CInt( htonl( server->ExternalIP ) )
+               ip = cast( uint32_t, htonl( server->ExternalIP ) )
                if ptr_->Status = DCC_STATUS.Listening then
                   if t = DCC_SEND then
                      server->SendLine( _
@@ -617,7 +617,7 @@ Sub DCC_LIST_TYPE.Add( ByVal DT As DCC_TRACKER Ptr )
 
 End Sub
 
-Function DCC_LIST_TYPE.Find( ByRef user_ As String, ByRef port_ As UShort, ByRef status_ As uinteger, byref token_ as integer = 0 ) As DCC_TRACKER Ptr
+Function DCC_LIST_TYPE.Find( ByRef user_ As String, ByRef port_ As uint16_t, ByRef status_ As uinteger, byref token_ as integer = 0 ) As DCC_TRACKER Ptr
 
    If used = 0 Then Exit Function
 

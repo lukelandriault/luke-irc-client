@@ -36,7 +36,7 @@ Global_IRC.LastLogWrite = Timer
 Randomize( Timer, 2 ) '2 = fast algorithm, 3 = best but slower
 ChDir ExePath
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    If FileExists( Environ( "APPDATA" ) & "\lic\" & Options_File ) Then
       ChDir Environ( "APPDATA" ) & "\lic\"
    EndIf
@@ -47,6 +47,7 @@ ChDir ExePath
    
    declare function waitpid_ cdecl alias "waitpid" (byval pid as integer, byval status as integer ptr, byval options as integer) as integer
    #define SIGINT 2
+   #define SIGSEGV 11   'Segmentation fault
    #define SIGPIPE 13   'Broken Pipe
    #define SIGTERM 15
    #define SIG_IGN 1    'Action Ignore
@@ -55,6 +56,7 @@ ChDir ExePath
    
    signal( SIGINT, cast( integer, @signal_catch ) )
    signal( SIGTERM, cast( integer, @signal_catch ) )
+   signal( SIGSEGV, cast( integer, @signal_catch ) )
    
    'if a file is being sent over DCC and is canceled at their end
    'linux kernel will throw a broken pipe signal if send() is called
@@ -122,9 +124,9 @@ If Global_IRC.NumServers = 0 Then
    AddDefaultServer( )
    if Global_IRC.LastError = NoOptionsFile then      
       notice_gui( "No Options file found!", rgb( 255, 0, 0 ) )
-      notice_gui( "Download the example from http://luke-irc-client.googlecode.com/hg/IRC_Options.txt", rgb( 255, 255, 255 ) )
+      notice_gui( "Download the example from http://raw.githubusercontent.com/lukelandriault/luke-irc-client/master/IRC_Options.txt", rgb( 255, 255, 255 ) )
       notice_gui( "Edit this file and place it in the same directory as LIC", rgb( 255, 255, 255 ) )
-      notice_gui( "Help for all options available here: http://luke-irc-client.googlecode.com/hg/readme.txt", rgb( 255, 255, 255 ) )
+      notice_gui( "Help for all options available here: http://raw.githubusercontent.com/lukelandriault/luke-irc-client/master/readme.txt", rgb( 255, 255, 255 ) )
       notice_gui( "To view the readme right now type '/readme' then hit enter", rgb( 128, 255, 128 ) )
    EndIf   
 EndIf
@@ -377,7 +379,7 @@ For i As Integer = 0 To Global_IRC.NumServers - 1
    Global_IRC.Server[i] = 0
 Next
 
-#ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
    sleep( 500, 1 )
    WSACleanup( )
 #EndIf
@@ -406,7 +408,7 @@ End Sub
 sub ParseScreenEvent( byref E as fb.event )
 
    static as gui_event G
-
+   
    Select Case E.type
 
       case EVENT_MOUSE_MOVE
@@ -421,6 +423,12 @@ sub ParseScreenEvent( byref E as fb.event )
 
       Case EVENT_KEY_PRESS
          Select Case e.ascii
+            case 43, 45 'plus/minus
+               if( Multikey( SC_CONTROL ) ) then
+                  Parse_Scancode( e.scancode )
+               else
+                  ChatInput.Parse( e.Ascii, 1 )
+               EndIf
             Case 32 To 126
                ChatInput.Parse( e.Ascii, 1 )
             Case Else
@@ -466,15 +474,21 @@ sub ParseScreenEvent( byref E as fb.event )
       Case EVENT_WINDOW_CLOSE
          *Global_IRC.Shutdown = 1
 
-      Case EVENT_MOUSE_BUTTON_PRESS
-
+      Case EVENT_MOUSE_BUTTON_PRESS, EVENT_MOUSE_BUTTON_RELEASE
+         
+         var SS = Global_IRC.Global_Options.SmoothScroll
+         Global_IRC.Global_Options.SmoothScroll = 0
+         
          G.Button = E.Button
-         if ( G.y >= 0 ) and ( G.x >= 0 ) then LIC_Event_Mouse_Press( @G )
-
-      Case EVENT_MOUSE_BUTTON_RELEASE
-
-         G.Button = E.Button
-         if ( G.y >= 0 ) and ( G.x >= 0 ) then LIC_Event_Mouse_Release( @G )
+         if ( G.y >= 0 ) and ( G.x >= 0 ) then
+            if E.type = EVENT_MOUSE_BUTTON_PRESS then
+               LIC_Event_Mouse_Press( @G )
+            else
+               LIC_Event_Mouse_Release( @G )
+            endif
+         EndIf
+         
+         Global_IRC.Global_Options.SmoothScroll = SS
 
       Case EVENT_MOUSE_WHEEL
 
@@ -506,7 +520,7 @@ Sub LIC_Resize( byval x as integer, byval y as integer )
       x -= 1
    EndIf
 
-   Dim As Integer diffx = Global_IRC.Global_Options.ScreenRes_X - X
+   Dim As Integer skipfixedwidth = 0, diffx = Global_IRC.Global_Options.ScreenRes_X - X
 
    For j As Integer = 0 To Global_IRC.NumServers - 1
       Var URT = Global_IRC.Server[j]->FirstRoom
@@ -516,18 +530,21 @@ Sub LIC_Resize( byval x as integer, byval y as integer )
       Next
    Next j
 
-   Global_IRC.Global_Options.ScreenRes_X = X
-   Global_IRC.Global_Options.ScreenRes_Y = Y
-   Global_IRC.Global_Options.DefaultTextBoxWidth = X - Global_IRC.Global_Options.DefaultUserListWidth
-
    Dim As String CI = ChatInput
 
    'LIC_DEBUG( "\\Resizing to:" & X & "x" & Y )
 
-   dim as integer posx, posy
-   ScreenControl( fb.GET_WINDOW_POS, posx, posy )
-   LIC_Screen_INIT( )
-   ScreenControl( fb.SET_WINDOW_POS, posx, posy )
+   if( (Global_IRC.Global_Options.ScreenRes_X <> X) AND (Global_IRC.Global_Options.ScreenRes_Y <> Y) ) then
+      Global_IRC.Global_Options.ScreenRes_X = X
+      Global_IRC.Global_Options.ScreenRes_Y = Y
+      Global_IRC.Global_Options.DefaultTextBoxWidth = X - Global_IRC.Global_Options.DefaultUserListWidth
+      dim as integer posx, posy
+      ScreenControl( fb.GET_WINDOW_POS, posx, posy )
+      LIC_Screen_INIT( )
+      ScreenControl( fb.SET_WINDOW_POS, posx, posy - 10 ) 'window title not counted
+   else
+      skipfixedwidth = 1
+   end if
 
    If Global_IRC.CurrentRoom->UserListWidth > 0 then
       Global_IRC.CurrentRoom->UpdateUserListScroll( -123456 )
@@ -540,23 +557,24 @@ Sub LIC_Resize( byval x as integer, byval y as integer )
 
    If Len( CI ) Then
       ChatInput.Set( CI )
-      ChatInput.Print
+      ChatInput.Print( )
    EndIf
 
-   LIC_ResizeAllRooms( )
+   LIC_ResizeAllRooms( skipfixedwidth )
 
 End Sub
 
-Sub LIC_ResizeAllRooms( )
+Sub LIC_ResizeAllRooms( byref skipfixedwidth as integer = 0 )
 
    var CurrentRoom = Global_IRC.CurrentRoom
+   var t = timer + 0.25
 
    ScreenLock
 
    for i as integer = 0 to Global_IRC.NumServers - 1
       var URT = Global_IRC.Server[i]->FirstRoom
       for j as integer = 1 to Global_IRC.Server[i]->NumRooms
-         if NOT( ( URT->RoomType = DccChat ) and ( (URT->pflags AND Hidden) <> 0 ) ) then
+         if NOT( ( URT->RoomType = DccChat ) and ( (URT->pflags AND Hidden) <> 0 ) ) and ((skipfixedwidth = 0) or (URT <> URT->Server_Ptr->RawRoom)) then
             'hidden DCC rooms have an event for deletion
             if URT = CurrentRoom then
                URT = URT->Server_Ptr->ResizeRoom( URT )
@@ -564,8 +582,22 @@ Sub LIC_ResizeAllRooms( )
             else
                URT = URT->Server_Ptr->ResizeRoom( URT )
             EndIf
+         else
+            LIC_DEBUG( "\\Skipping resize of room: " & URT->RoomName & " 0x" & Hex( URT ) )
          EndIf
          URT = URT->NextRoom
+         if( timer > t ) then 'catchup
+            if Pending_Message() then
+               screenunlock
+               For i As Integer = 0 To Global_IRC.NumServers - 1
+                  while Global_IRC.Server[i]->ParseMessage() = TRUE
+                     'sleep 1,1
+                  Wend
+               Next
+               screenlock
+            end if
+            t = timer + 0.25
+         EndIf
       Next
    Next
 
@@ -621,6 +653,9 @@ Sub CmdLine_Parse( )
             argc += 1
             if len( command( argc ) ) then
                Options_File = command( argc )
+               if( InStr( Options_File, ANY "\/" ) = 0 ) then
+                  Options_File = curdir + "/" + Options_File
+               EndIf
                LIC_DEBUG( "\\Options File set to: " & Options_File )
             EndIf
 
@@ -641,7 +676,7 @@ End Sub
 
 Sub signal_catch( i as integer )
    
-   static as integer force
+   static as integer force = 0
    LIC_DEBUG( "\\Caught signal: " & i )
 
    select case i
@@ -649,16 +684,27 @@ Sub signal_catch( i as integer )
    
       if force then
          LIC_DEBUG( "\\Forcing termination now" )
-         end 1
+         end i
       EndIf
-      force = 1
       
+      force += 1
       MutexLock( Global_IRC.Mutex )
       *Global_IRC.Shutdown = TRUE
       MutexunLock( Global_IRC.Mutex )
+   
+   case SIGSEGV
+      
+      if force = 0 then
+         LIC_DEBUG( "\\OUCH! Segfault... Last irc msg.raw ~" & Global_IRC.Global_msg.raw & "~" )
+         WriteLogs()
+         sleep 1000, 1
+         force += 1
+      end if
+      end i
       
    End Select
 
+   
    
 End Sub
 

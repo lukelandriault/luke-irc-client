@@ -62,11 +62,11 @@ dim shared as uinteger MaxMessageSize
             case Script_Filter, Script_WordFilter
                imsg.flags or= MF_Filter
             case Script_CtcpFilter
-               if ( asc( imsg.msg ) = 1 ) and ( asc( imsg.msg, len_hack( imsg.msg ) ) = 1 ) then
+               if ( len_hack( imsg.msg ) > 2 ) andalso ( imsg.msg[0] = 1 ) and ( imsg.msg[len_hack( imsg.msg )-1] = 1 ) then
                   if len_hack( imsg.msg ) > 7 then
-                     var d = *cptr( double ptr, @imsg.msg[0] )
+                     var d = *cptr( int64_t ptr, @imsg.msg[0] )
                      select case d
-                     case *cptr( double ptr, @!"\1ACTION " ), *cptr( double ptr, @!"\1action " )
+                     case *cptr( int64_t ptr, @!"\1ACTION " ), *cptr( int64_t ptr, @!"\1action " )
                         success = FALSE
                      end select
                   end if
@@ -96,10 +96,10 @@ dim shared as uinteger MaxMessageSize
 
 #EndMacro
 
-Function Server_type.ParseMessage( ) as integer
+Function Server_Type.ParseMessage( ) as integer
 
    static as int32_t TempInt
-   static as irc_message imsg
+   #define imsg Global_IRC.Global_msg
 
    #define CommandPtr CPtr( int32_t Ptr, @imsg.Command )
 
@@ -110,7 +110,7 @@ Function Server_type.ParseMessage( ) as integer
    if TempInt > 0 then
       
       if MaxMessageSize = 0 then
-         MaxMessageSize = IRC_MAX_MESSAGE_SIZE * iif( ServerOptions.TwitchHacks, 2, 1 )
+         MaxMessageSize = IRC_MAX_MESSAGE_SIZE * iif( ServerOptions.TwitchHacks <> 0, 8, 1 )
          imsg.raw = space( MaxMessageSize )
          imsg.msg = space( MaxMessageSize )
       endif
@@ -172,6 +172,7 @@ Function Server_type.ParseMessage( ) as integer
    LastServerTalk = Timer
    imsg.flags = 0
    Function = TRUE
+   Global_IRC.msgCount += 1
    
    if Global_IRC.Global_Options.ShowRaw <> FALSE and RawRoom <> 0 then
       RawRoom->AddLOT( imsg.raw, Global_IRC.Global_Options.RawInputColour )
@@ -285,6 +286,12 @@ Function Server_type.ParseMessage( ) as integer
             imsg.URT = Find( imsg.From )
          EndIf
          *CommandPtr = IRC_PRIVMSG 'hack to spoof as a privmsg
+         
+      case TWITCH_CLEAR
+         imsg.URT = Find( imsg.Param(0) )
+         if imsg.URT = 0 then
+            LIC_DEBUG( "Bad clear...?" & imsg.msg )
+         EndIf
 
       Case Else
 
@@ -313,7 +320,9 @@ Function Server_type.ParseMessage( ) as integer
             If imsg.URT = 0 Then
                if len( *imsg.Param(0) ) > 0 then
                   imsg.URT = AddRoom( imsg.Param(0), Channel )
-                  Global_IRC.SwitchRoom( imsg.URT )
+                  if Global_IRC.Global_Options.SwitchOnJoin <> 0 then
+                     Global_IRC.SwitchRoom( imsg.URT )
+                  EndIf
                else
                   'LIC_DEBUG( "\\Empty Join" )
                   return 0
@@ -759,14 +768,20 @@ Function Server_type.ParseMessage( ) as integer
       
          imsg.URT->AddLOT( "** Server has enabled " & *imsg.Param( imsg.ParamCount ), Global_IRC.Global_Options.ServerMessageColour )
       
-      case TWITCH_CLEAR
+      case TWITCH_CLEAR 'could be CLEARCHAT or CLEARMSG
+      '@login=matelener3;target-msg-id=400ef065-445e-47db-b50d-1e865caa39a0 :tmi.twitch.tv CLEARMSG #chessnetwork :ONLY NAKAMURA CAN STOP MAGNUS
       '@ban-duration=600;ban-reason=Automated\sby\sBoomot.;room-id=1234;target-user-id=4321 :tmi.twitch.tv CLEARCHAT #channel :<user banned>
+         
+         if ( len_hack( imsg.Command ) > 5 ) andalso ( imsg.Command[5] = ASC("M") ) then
+            return 0 'ignore CLEARMSG, freedom of speech!
+         EndIf
+
          if imsg.ParamCount > 0 then
             dim as string duration, reason
             if len_hack( imsg.MessageTag ) > 0 then
                var p = instr( imsg.MessageTag, "ban-duration=" )
                if p then
-                  duration = str( valint( mid( imsg.MessageTag, p + 13, 6 ) ) )
+                  duration = str( valint( mid( imsg.MessageTag, p + 13, 7 ) ) )
                   if duration = "0" then
                      duration = "permanently"
                   else
@@ -784,7 +799,12 @@ Function Server_type.ParseMessage( ) as integer
             EndIf
             imsg.URT->AddLOT( "** " & *imsg.Param( imsg.ParamCount ) & " has been banned " & duration & reason, Global_IRC.Global_Options.ServerMessageColour )
          else
-            imsg.URT->AddLOT( "** Chat has been cleared", Global_IRC.Global_Options.ServerMessageColour )
+            if imsg.URT = 0 then
+               Lobby->AddLOT( "** " & imsg.Param(0) & " Chat has been cleared", Global_IRC.Global_Options.ServerMessageColour )
+            else
+               imsg.URT->AddLOT( "** Chat has been cleared", Global_IRC.Global_Options.ServerMessageColour )   
+            EndIf
+            
          end if
       
       case TWITCH_HOST
@@ -794,7 +814,9 @@ Function Server_type.ParseMessage( ) as integer
          dim as string hostee = iif( p > 0, left( imsg.msg, p - 1 ), imsg.msg )
          
          imsg.URT->AddLOT( "** Now hosting: " & hostee, Global_IRC.Global_Options.ServerMessageColour )
-         SendLine( "JOIN #" & hostee )      
+         if ServerOptions.TwitchFollowHosts then
+            SendLine( "JOIN #" & hostee )
+         end if
       
       Case Else
 
@@ -972,3 +994,4 @@ sub Build_IRC_Message( byref m as irc_message, byref s as string )
    Next
 
 End Sub
+

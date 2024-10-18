@@ -1,16 +1,17 @@
 #Define IRC_Version_name "Luke's IRC Client"
 #Define IRC_Version_major "0"
-#Define IRC_Version_minor "95"
-#Define IRC_Version_build "704"
-#Define IRC_Version_http "http://code.google.com/p/luke-irc-client/"
+#Define IRC_Version_minor "96"
+#Define IRC_Version_build "711"
+#Define IRC_Version_http "http://github.com/lukelandriault/luke-irc-client"
 
 #Include Once "lic-compile-options.bi"
 #if LIC_CHI
    #Include Once "chisock.bi"
 #endif
 #Include Once "fbgfx.bi"
+#include Once "curl.bi"
 
-#Ifndef __FB_LINUX__
+#ifdef __FB_WIN32__
 
    '#ifdef LIC_WIN_INCLUDE
       #Include Once "windows.bi"
@@ -63,7 +64,7 @@
       #if k = 0
          __sleep( l )
       #else
-         #ifndef __FB_LINUX__
+         #ifdef __FB_WIN32__
             SleepEx( l, k )
          #else
             _sleep( l )
@@ -543,8 +544,9 @@ Type Global_IRC_Type
    LastError      as integer
    ShutDown       As Integer Ptr
    #if LIC_DCC
-      DCC_list       As DCC_LIST_Type
+      DCC_list    As DCC_LIST_Type
    #endif
+   Global_msg     As irc_message
    event_handler  As Event_handler_Type
    Server         As Server_type Ptr ptr
    Global_Options As IRC_Options_type
@@ -561,6 +563,7 @@ Type Global_IRC_Type
    #If __FB_DEBUG__
    DebugLog       As String
    DebugLock      As Any Ptr
+   msgCount       as uint64_t
    #endif
 
    Declare Sub DrawTabs
@@ -578,6 +581,12 @@ Type Global_IRC_Type
 
 End Type
 
+type curl_obj
+   as int32_t size, allocated
+   as ubyte ptr p
+End Type
+Declare function curlget( url as string, byref ret as curl_obj, compress as boolean = TRUE, reuse as boolean = FALSE ) as CURLcode
+
 Declare Sub LIC_Main( byref as integer = FALSE )
 Declare Sub LIC_Main_Events( )
 Declare Sub ParseScreenEvent( byref as fb.event )
@@ -587,7 +596,7 @@ Declare Sub LIC_Event_Mouse_Release( ByRef g As gui_event Ptr )
 Declare Sub LIC_Event_Mouse_Press( ByRef g As gui_event Ptr )
 Declare Sub LIC_Notify( ByRef Highlight As Integer = 0 )
 Declare Sub LIC_Resize( byval x as integer, byval y as integer )
-Declare Sub LIC_ResizeAllRooms( )
+Declare Sub LIC_ResizeAllRooms( byref skipfixedwidth as integer = 0 )
 Declare Sub WriteLogs( )
 Declare Sub chiConnect( byval t as threadconnect ptr )
 declare sub chiListen( byval t as threadconnect ptr )
@@ -610,5 +619,6 @@ Declare Function GetLOT( byval as integer ) as LineOfText ptr
 Declare Function Pending_Message( ) As Integer
 Declare Function UWidth( byref s as string ) as integer
 Declare Function CWidth( byref s as string ) as integer
+declare Function HttpGet( byref url as string, byref sock as any ptr, byref ret as any ptr ) as integer
 
 Extern Global_IRC As Global_IRC_Type

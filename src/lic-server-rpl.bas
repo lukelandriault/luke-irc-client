@@ -57,7 +57,7 @@ Select Case valInt( imsg.Command )
             Wend
             Join_event._string += Channel & ","
          Loop Until i = 1
-         Join_event._string = RTrim( Join_event._string, "," )
+         Join_event._string = LTrim( RTrim( Join_event._string, "," ), !"\n" )
 
          If Len( ServerOptions.AutoPass ) Then
             Join_event._integer = IRC_NOTICE

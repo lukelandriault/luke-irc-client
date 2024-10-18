@@ -31,8 +31,9 @@ F8 - Clear the current room's window of all chat messages
 CTRL + V - Paste text
 CTRL + Tab - Switch to the next room
 SHIFT + Tab - Switch to the previous room
+CTRL + Left/Right - Switch to active rooms
 PgUp/Down - Scroll up/down 1 page
-
+CTRL + PgUp/Down - Scroll to the top/bottom of the backlog
 
  ___ Chat Input Controls (Basic) ___
 
@@ -104,6 +105,10 @@ ChatBox Font Size [8]
 [Config = #]
    Use [CONFIG = #] to seperate server sections and their
    options (only needed if you connect to multiple servers)
+
+CTCP Ignore Multi [0]
+   Ignore CTCP commands not directly sent to you
+   Ex: PRIVMSG #channel :\x01PING\x01
    
 CTCP Version [LIC version & webpage]
    The reply to CTCP protocol 'VERSION'
@@ -268,6 +273,9 @@ Sort By Privs [1]
 Sort Tab By Activity [1]
    Tab completion will be sorted by user activity
    instead of the userlist order
+
+Switch On Join [1]
+   Automatically change the current room to the channel you JOINed
    
 System Tray Colour % [blue]
    Colour of the system tray blink when you're hi-lited
